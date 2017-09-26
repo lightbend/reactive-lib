@@ -75,6 +75,10 @@ lazy val lagom13Java = (project in file("lagom13-java"))
   .settings(
     name := "reactive-lib-lagom13-java",
 
+    autoScalaLibrary := false,
+
+    crossPaths := false,
+
     sourceDirectories in Compile ++= Vector(
       (sourceDirectory in (common, Compile)).value,
       (sourceDirectory in (akka24, Compile)).value
@@ -118,6 +122,10 @@ lazy val lagom14Java = (project in file("lagom14-java"))
   .settings(scala211Settings /* @FIXME until a new 2.12 milestone is published */)
   .settings(
     name := "reactive-lib-lagom14-java",
+
+    autoScalaLibrary := false,
+
+    crossPaths := false,
 
     // @FIXME remove the sourceDirectories settings when a new 2.12 milestone is published
 
