@@ -1,0 +1,18 @@
+language: scala
+scala:
+  - 2.12.3
+  - 2.11.11
+jdk:
+  - oraclejdk8
+sudo: required
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/launchers
+before_cache:
+  # Ensure changes to the cache aren't persisted
+  - rm -rf $HOME/.ivy2/cache/com/lightbend/rp/sbtreactiveapp
+  # Delete all ivydata files since ivy touches them on each build
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" | xargs rm
+script:
+  - sbt test

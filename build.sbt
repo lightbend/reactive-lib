@@ -1,12 +1,13 @@
 val Versions = new {
-  val akka24   = "2.4.12" // First version cross-compiled to 2.12
-  val akka25   = "2.5.0"
-  val lagom13  = "1.3.0"
-  val lagom14  = "1.4.0-M2"
-  val play25   = "2.5.0"
-  val play26   = "2.6.0"
-  val scala211 = "2.11.11"
-  val scala212 = "2.12.3"
+  val akka24    = "2.4.12" // First version cross-compiled to 2.12
+  val akka25    = "2.5.0"
+  val lagom13   = "1.3.0"
+  val lagom14   = "1.4.0-M2"
+  val play25    = "2.5.0"
+  val play26    = "2.6.0"
+  val scala211  = "2.11.11"
+  val scala212  = "2.12.3"
+  val scalaTest = "3.0.1"
 }
 
 lazy val sharedSettings = Vector(
@@ -29,6 +30,7 @@ lazy val reactiveLib = (project in file("."))
   .settings(sharedSettings)
   .settings(name := "reactive-lib")
   .aggregate(
+    common,
     akka24,
     akka25,
     lagom13Java,
@@ -42,7 +44,12 @@ lazy val reactiveLib = (project in file("."))
 lazy val common = (project in file("common"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(sharedSettings)
-  .settings(name := "reactive-lib-common")
+  .settings(
+    name := "reactive-lib-common",
+    libraryDependencies ++= Seq(
+      "org.scalatest"     %% "scalatest"  % Versions.scalaTest % "test"
+    )
+  )
 
 lazy val akka24 = (project in file("akka24"))
   .enablePlugins(AutomateHeaderPlugin)
@@ -52,7 +59,8 @@ lazy val akka24 = (project in file("akka24"))
     name := "reactive-lib-akka24",
 
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor" % Versions.akka24
+      "com.typesafe.akka" %% "akka-actor" % Versions.akka24,
+      "org.scalatest"     %% "scalatest"  % Versions.scalaTest % "test"
     )
   )
 
@@ -64,7 +72,8 @@ lazy val akka25 = (project in file("akka25"))
     name := "reactive-lib-akka25",
 
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor" % Versions.akka25
+      "com.typesafe.akka" %% "akka-actor" % Versions.akka25,
+      "org.scalatest"     %% "scalatest"  % Versions.scalaTest % "test"
     )
   )
 
@@ -90,7 +99,8 @@ lazy val lagom13Java = (project in file("lagom13-java"))
     ),
 
     libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom13
+      "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom13,
+      "org.scalatest"       %% "scalatest"            % Versions.scalaTest % "test"
     )
   )
 
@@ -112,7 +122,8 @@ lazy val lagom13Scala = (project in file("lagom13-scala"))
     ),
 
     libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom13
+      "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom13,
+      "org.scalatest"       %% "scalatest"             % Versions.scalaTest % "test"
     )
   )
 
@@ -140,7 +151,8 @@ lazy val lagom14Java = (project in file("lagom14-java"))
     ),
 
     libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom14
+      "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom14,
+      "org.scalatest"       %% "scalatest"            % Versions.scalaTest % "test"
     )
   )
 
@@ -164,7 +176,8 @@ lazy val lagom14Scala = (project in file("lagom14-scala"))
     ),
 
     libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom14
+      "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom14,
+      "org.scalatest"       %% "scalatest"             % Versions.scalaTest % "test"
     )
   )
 
@@ -186,7 +199,8 @@ lazy val play25 = (project in file("play25"))
     ),
 
     libraryDependencies ++= Seq(
-      "com.typesafe.play" %% "play-ws" % Versions.play25
+      "com.typesafe.play" %% "play-ws"   % Versions.play25,
+      "org.scalatest"     %% "scalatest" % Versions.scalaTest % "test"
     )
   )
 
@@ -198,6 +212,7 @@ lazy val play26 = (project in file("play26"))
     name := "reactive-lib-play26",
 
     libraryDependencies ++= Seq(
-      "com.typesafe.play" %% "play-ws" % Versions.play26
+      "com.typesafe.play" %% "play-ws"   % Versions.play26,
+      "org.scalatest"     %% "scalatest" % Versions.scalaTest % "test"
     )
   )
