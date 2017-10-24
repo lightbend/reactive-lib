@@ -1,5 +1,9 @@
 # reactive-lib
 
+## Maintenance
+
+Enterprise Suite Platform Team <es-platform@lightbend.com>
+
 ## License
 
 Copyright (C) 2017 Lightbend Inc. (https://www.lightbend.com).
