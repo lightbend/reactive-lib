@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package com.lightbend.rp.reactivelib.javadsl;
+package com.lightbend.rp
 
-import java.net.URI;
-import java.util.Optional;
+sealed trait Platform
 
-public final class ServiceLocator {
-    public static Optional<URI> lookup(String name) {
-        throw new RuntimeException("Not Implemented");
-    }
+case object Kubernetes extends Platform
+
+object Platform {
+  lazy val active: Option[Platform] = decode(Option(System.getenv("RP_PLATFORM")))
+
+  private[rp] def decode(platform: Option[String]) = platform match {
+    case Some("kubernetes") => Some(Kubernetes)
+    case _                  => None
+  }
 }

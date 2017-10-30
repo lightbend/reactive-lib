@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package deleteme
+package com.lightbend.rp
 
 import org.scalatest.{Matchers, WordSpec}
 
-// TODO: delete me once the first real test is added into the project
-class DummySpec extends WordSpec with Matchers {
-  "pass" in {
-    1 shouldBe 1
+class PlatformSpec extends WordSpec with Matchers {
+  "decode" should {
+    "work" in {
+      Platform.decode(None) shouldBe None
+      Platform.decode(Some("kubernetes")) shouldBe Some(Kubernetes)
+      Platform.decode(Some("potato")) shouldBe None
+    }
   }
 }
