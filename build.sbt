@@ -18,7 +18,7 @@ def createProject(id: String, path: String) = Project(id, file(path))
   .settings(
     name := id,
     resolvers += Resolver.bintrayRepo("hajile", "maven"),
-    organization := "com.lightbend.rp.reactive-lib",
+    organization := "com.lightbend.rp",
     organizationName := "Lightbend, Inc.",
     startYear := Some(2017),
     licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -31,7 +31,7 @@ def createProject(id: String, path: String) = Project(id, file(path))
     developers := List(
       Developer("lightbend", "Lightbend Contributors", "", url("https://github.com/lightbend/reactive-lib"))
     ),
-    sonatypeProfileName := "com.lightbend.rp.reactive-lib",
+    sonatypeProfileName := "com.lightbend.rp",
     scmInfo := Some(ScmInfo(url("https://github.com/lightbend/reactive-lib"), "git@github.com:lightbend/reactive-lib.git")),
     scalaVersion := Versions.scala211,
     publishTo := Some(
@@ -73,12 +73,12 @@ lazy val root = createProject("reactive-lib", ".")
     publishArtifact := false
   )
 
-lazy val common = createProject("common", "common")
+lazy val common = createProject("reactive-lib-common", "common")
   .settings(
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
-lazy val serviceDiscovery = createProject("service-discovery", "service-discovery")
+lazy val serviceDiscovery = createProject("reactive-lib-service-discovery", "service-discovery")
   .dependsOn(common)
   .settings(
     libraryDependencies ++= Seq(
@@ -87,7 +87,7 @@ lazy val serviceDiscovery = createProject("service-discovery", "service-discover
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
-lazy val serviceDiscoveryLagom13Java = createProject("service-discovery-lagom13-java", "service-discovery-lagom13-java")
+lazy val serviceDiscoveryLagom13Java = createProject("reactive-lib-service-discovery-lagom13-java", "service-discovery-lagom13-java")
   .dependsOn(serviceDiscovery)
   .settings(
     autoScalaLibrary := false,
@@ -97,17 +97,15 @@ lazy val serviceDiscoveryLagom13Java = createProject("service-discovery-lagom13-
     )
   )
 
-lazy val serviceDiscoveryLagom13Scala = createProject("service-discovery-lagom13-scala", "service-discovery-lagom13-scala")
+lazy val serviceDiscoveryLagom13Scala = createProject("reactive-lib-service-discovery-lagom13-scala", "service-discovery-lagom13-scala")
   .dependsOn(serviceDiscovery)
   .settings(
-    autoScalaLibrary := false,
-    crossPaths := false,
     libraryDependencies ++= Seq(
       "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom13
     )
   )
 
-lazy val serviceDiscoveryLagom14Java = createProject("service-discovery-lagom14-java", "service-discovery-lagom14-java")
+lazy val serviceDiscoveryLagom14Java = createProject("reactive-lib-service-discovery-lagom14-java", "service-discovery-lagom14-java")
   .dependsOn(serviceDiscovery)
   .settings(
     autoScalaLibrary := false,
@@ -117,17 +115,15 @@ lazy val serviceDiscoveryLagom14Java = createProject("service-discovery-lagom14-
     )
   )
 
-lazy val serviceDiscoveryLagom14Scala = createProject("service-discovery-lagom14-scala", "service-discovery-lagom14-scala")
+lazy val serviceDiscoveryLagom14Scala = createProject("reactive-lib-service-discovery-lagom14-scala", "service-discovery-lagom14-scala")
   .dependsOn(serviceDiscovery)
   .settings(
-    autoScalaLibrary := false,
-    crossPaths := false,
     libraryDependencies ++= Seq(
       "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom14
     )
   )
 
-lazy val akkaClusterBootstrap = createProject("akka-cluster-bootstrap", "akka-cluster-bootstrap")
+lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstrap", "akka-cluster-bootstrap")
   .dependsOn(serviceDiscovery)
   .settings(
     libraryDependencies ++= Seq(
@@ -138,13 +134,13 @@ lazy val akkaClusterBootstrap = createProject("akka-cluster-bootstrap", "akka-cl
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
-lazy val playHttpBinding = createProject("play-http-binding", "play-http-binding")
+lazy val playHttpBinding = createProject("reactive-lib-play-http-binding", "play-http-binding")
   .dependsOn(common)
   .settings(
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
-lazy val secrets = createProject("secrets", "secrets")
+lazy val secrets = createProject("reactive-lib-secrets", "secrets")
   .dependsOn(common)
   .settings(
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
