@@ -16,17 +16,22 @@
 
 package com.lightbend.rp.servicediscovery.scaladsl
 
-import akka.actor.{ ExtendedActorSystem, Extension, ExtensionKey }
+import akka.actor._
 import com.typesafe.config.Config
-import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
 
-object Settings extends ExtensionKey[Settings]
+import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
 
-private[servicediscovery] class Settings(system: ExtendedActorSystem) extends Extension {
+final class SettingsImpl(system: ExtendedActorSystem) extends Extension {
   private val serviceDiscovery = system.settings.config.getConfig("reactive-lib.service-discovery")
 
   val askTimeout: FiniteDuration = duration(serviceDiscovery, "ask-timeout")
 
   private def duration(config: Config, key: String): FiniteDuration =
     Duration(config.getDuration(key, MILLISECONDS), MILLISECONDS)
+}
+
+object Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
+  override def lookup: Settings.type = Settings
+
+  override def createExtension(system: ExtendedActorSystem): SettingsImpl = new SettingsImpl(system)
 }

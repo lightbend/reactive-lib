@@ -39,6 +39,10 @@ object ServiceLocator {
         val serviceLocatorSettings = DnsServiceLocatorSettings(as)
         val settings = Settings(as)
 
+        // The timeout value is deduced from the DnsServiceLocator logic
+        // which does upto three attempts (first timeout value twice, then second once)
+        // plus additional time for local processing
+
         val askTimeout =
           settings.askTimeout +
             serviceLocatorSettings.resolveTimeout1 +

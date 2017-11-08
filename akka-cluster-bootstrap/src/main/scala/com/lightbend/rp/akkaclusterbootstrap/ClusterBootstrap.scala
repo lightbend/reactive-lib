@@ -21,14 +21,13 @@ import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import com.lightbend.rp.servicediscovery.scaladsl._
 
-final class BootstrapExtensionImpl(system: ExtendedActorSystem) extends Extension {
+final class ClusterBootstrapImpl(system: ExtendedActorSystem) extends Extension {
   val cluster = Cluster(system)
   val http = Http(system)
   val serviceLocator = ServiceLocator(system)
 }
 
-object BootstrapExtension extends ExtensionId[BootstrapExtensionImpl] with ExtensionIdProvider {
-  override def lookup = BootstrapExtension
-  override def createExtension(system: ExtendedActorSystem) = new BootstrapExtensionImpl(system)
-  override def get(system: ActorSystem): BootstrapExtensionImpl = super.get(system)
+object ClusterBootstrap extends ExtensionId[ClusterBootstrapImpl] with ExtensionIdProvider {
+  override def lookup: ClusterBootstrap.type = ClusterBootstrap
+  override def createExtension(system: ExtendedActorSystem): ClusterBootstrapImpl = new ClusterBootstrapImpl(system)
 }
