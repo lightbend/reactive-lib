@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# reactive-lib uses spray-json -- but locally included directly in the project with a different namespace
+# this is done to avoid clashing with the user's application who may have a conflicting version as a
+# dependency
+
+# this script clones spray-json and changes the package name in its files
+
+set -e
+
+TAG="v1.3.4"
+
+SCRIPT_NAME="${BASH_SOURCE[0]}"
+
+if [ -h "$SCRIPT_NAME" ]; then
+  SCRIPT_NAME="$(readlink "$SCRIPT_NAME")"
+fi
+
+PROJECT_DIR="$(cd "$(dirname "$SCRIPT_NAME")/.." && pwd)"
+
+rm -rf "$PROJECT_DIR/json"
+
+git clone https://github.com/spray/spray-json "$PROJECT_DIR/json"
+
+cd "$PROJECT_DIR/json"
+
+git checkout "$TAG"
+rm -rf .git
+
+# rewrite packages
+find . -name "*.scala*" -type f -exec sed -i 's/^package spray\(.*\)$/package com.lightbend.rp.internal.spray\1/g' {} \;
+
+# upgrade plugins to versions with sbt 1.0 support
+sed -i 's/"sbt-boilerplate" % "0.5.9"/"sbt-boilerplate" % "0.6.1"/g' project/plugins.sbt
+sed -i 's/"sbt-osgi" % "0.7.0"/"sbt-osgi" % "0.9.2"/g' project/plugins.sbt
+
+# sbt-boilerplate usage has changed
+sed -i 's/Boilerplate\.settings/enablePlugins(spray.boilerplate.BoilerplatePlugin)/g' build.sbt
+
+# osgi not needed
+sed -i 's/osgiSettings//g' build.sbt

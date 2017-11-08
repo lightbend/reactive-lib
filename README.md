@@ -1,5 +1,9 @@
 # reactive-lib
 
+## Development
+
+This library uses an imported/forked version of spray-json. For more details, refer to `scripts/fork-spray-json`.
+
 ## Maintenance
 
 Enterprise Suite Platform Team <es-platform@lightbend.com>

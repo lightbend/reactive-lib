@@ -12,4 +12,5 @@ before_cache:
   # Delete all ivydata files since ivy touches them on each build
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" | xargs rm
 script:
+  - (cd json && sbt test)
   - sbt +test
