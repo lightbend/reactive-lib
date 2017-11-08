@@ -57,6 +57,8 @@ def createProject(id: String, path: String) = Project(id, file(path))
     )
   )
 
+lazy val sprayJson = ProjectRef(file("./json"), "json")
+
 lazy val root = createProject("reactive-lib", ".")
   .aggregate(
     akkaClusterBootstrap,
@@ -124,7 +126,7 @@ lazy val serviceDiscoveryLagom14Scala = createProject("reactive-lib-service-disc
   )
 
 lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstrap", "akka-cluster-bootstrap")
-  .dependsOn(serviceDiscovery)
+  .dependsOn(serviceDiscovery, sprayJson)
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor"          % Versions.akka,
