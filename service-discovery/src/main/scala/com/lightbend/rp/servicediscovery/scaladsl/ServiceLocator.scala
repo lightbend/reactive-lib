@@ -19,7 +19,7 @@ package com.lightbend.rp.servicediscovery.scaladsl
 import akka.actor._
 import akka.pattern.ask
 import com.lightbend.dns.locator.{ ServiceLocator => DnsServiceLocator, Settings => DnsServiceLocatorSettings }
-import com.lightbend.rp._
+import com.lightbend.rp.common._
 import java.net.URI
 import scala.concurrent.Future
 

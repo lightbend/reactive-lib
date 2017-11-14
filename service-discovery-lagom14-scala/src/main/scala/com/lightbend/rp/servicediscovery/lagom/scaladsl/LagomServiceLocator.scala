@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.lightbend.rp.servicediscovery.scaladsl
+package com.lightbend.rp.servicediscovery.lagom.scaladsl
 
 import akka.actor.ActorSystem
-import com.lightbend.lagom.internal.client.CircuitBreakers
 import com.lightbend.lagom.scaladsl.api.Descriptor
-import com.lightbend.lagom.scaladsl.client.CircuitBreakingServiceLocator
-import java.net.{ URI => JavaURI }
-import scala.concurrent.{ ExecutionContext, Future }
+import com.lightbend.lagom.scaladsl.client.{CircuitBreakersPanel, CircuitBreakingServiceLocator}
+import java.net.{URI => JavaURI}
+import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.reflectiveCalls
 
-class LagomServiceLocator(circuitBreakers: CircuitBreakers)
-                         (implicit as: ActorSystem, ec: ExecutionContext) extends CircuitBreakingServiceLocator(circuitBreakers)(ec) {
+class LagomServiceLocator(circuitBreakersPanel: CircuitBreakersPanel)
+                         (implicit as: ActorSystem, ec: ExecutionContext) extends CircuitBreakingServiceLocator(circuitBreakersPanel)(ec) {
 
   override def locate(name: String, serviceCall: Descriptor.Call[_, _]): Future[Option[JavaURI]] =
     ServiceLocator.lookup(name)
