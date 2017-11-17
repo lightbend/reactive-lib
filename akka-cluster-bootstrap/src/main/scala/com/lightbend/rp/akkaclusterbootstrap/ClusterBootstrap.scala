@@ -18,12 +18,10 @@ package com.lightbend.rp.akkaclusterbootstrap
 
 import akka.actor._
 import akka.cluster.Cluster
-import akka.http.scaladsl.Http
 import com.lightbend.rp.servicediscovery.scaladsl._
 
 final class ClusterBootstrapImpl(system: ExtendedActorSystem) extends Extension {
   val cluster = Cluster(system)
-  val http = Http(system)
   val serviceLocator = ServiceLocator(system)
 }
 

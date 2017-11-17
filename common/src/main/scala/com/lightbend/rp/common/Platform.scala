@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.lightbend.rp
+package com.lightbend.rp.common
 
 sealed trait Platform
 
