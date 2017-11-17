@@ -18,12 +18,12 @@ package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor._
 import akka.pattern.ask
-import com.lightbend.dns.locator.{ServiceLocator => DnsServiceLocator, Settings => DnsServiceLocatorSettings}
+import com.lightbend.dns.locator.{ ServiceLocator => DnsServiceLocator, Settings => DnsServiceLocatorSettings }
 import com.lightbend.rp.common._
 import java.net.URI
 import java.util.concurrent.ThreadLocalRandom
 
-import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator.{AddressSelection, AddressSelectionRandom}
+import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator.{ AddressSelection, AddressSelectionRandom }
 
 import scala.concurrent.Future
 
@@ -41,9 +41,9 @@ object ServiceLocator {
   val AddressSelectionFirst: AddressSelection =
     services => services.headOption
 
-  def lookup(name: String,
-             addressSelection: AddressSelection = AddressSelectionRandom)
-            (implicit as: ActorSystem): Future[Option[URI]] = {
+  def lookup(
+    name: String,
+    addressSelection: AddressSelection = AddressSelectionRandom)(implicit as: ActorSystem): Future[Option[URI]] = {
     val settings = Settings(as)
 
     settings.externalServiceAddresses.get(name) match {
@@ -60,7 +60,6 @@ object ServiceLocator {
             val locator = as.actorOf(Props[DnsServiceLocator])
             val serviceLocatorSettings = DnsServiceLocatorSettings(as)
 
-
             // The timeout value is deduced from the DnsServiceLocator logic
             // which does upto three attempts (first timeout value twice, then second once)
             // plus additional time for local processing
@@ -72,8 +71,7 @@ object ServiceLocator {
                 serviceLocatorSettings.resolveTimeout2
 
             for {
-              result <-
-              locator
+              result <- locator
                 .ask(DnsServiceLocator.GetAddress(name))(askTimeout)
                 .mapTo[DnsServiceLocator.Addresses]
             } yield addressSelection(result.addresses.map(addressToUri))

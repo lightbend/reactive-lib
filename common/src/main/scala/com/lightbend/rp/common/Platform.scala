@@ -25,6 +25,6 @@ object Platform {
 
   private[rp] def decode(platform: Option[String]) = platform match {
     case Some("kubernetes") => Some(Kubernetes)
-    case _                  => None
+    case _ => None
   }
 }

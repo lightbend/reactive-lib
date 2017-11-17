@@ -17,12 +17,12 @@
 package com.lightbend.rp.servicediscovery.javadsl
 
 import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestKit}
+import akka.testkit.{ ImplicitSender, TestKit }
 import com.lightbend.rp.servicediscovery.scaladsl.Settings
 import com.typesafe.config.ConfigFactory
 import java.net.URI
 import java.util.Optional
-import org.scalatest.{AsyncWordSpecLike, BeforeAndAfterAll, Matchers}
+import org.scalatest.{ AsyncWordSpecLike, BeforeAndAfterAll, Matchers }
 import scala.collection.JavaConversions._
 import scala.collection.immutable.Seq
 

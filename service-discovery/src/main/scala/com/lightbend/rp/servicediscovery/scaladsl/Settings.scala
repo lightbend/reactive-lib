@@ -21,7 +21,7 @@ import com.typesafe.config.Config
 import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
-import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
+import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
 
 final class SettingsImpl(system: ExtendedActorSystem) extends Extension {
   private val serviceDiscovery = system.settings.config.getConfig("rp.service-discovery")
