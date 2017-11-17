@@ -16,21 +16,52 @@
 
 package com.lightbend.rp.servicediscovery.javadsl;
 
-import java.net.URI;
-import java.util.Optional;
-
 import akka.actor.ActorSystem;
 import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator$;
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import scala.runtime.AbstractFunction1;
 import scala.Option;
+import scala.collection.JavaConversions;
+import scala.collection.Seq;
 import scala.concurrent.Future;
 
 public final class ServiceLocator {
+    public interface AddressSelection {
+        Optional<URI> select(List<URI> addreses);
+    }
+
+    public static AddressSelection addressSelectionFirst = addreses ->
+            addreses.isEmpty() ?
+                    Optional.empty() :
+                    Optional.of(addreses.get(0));
+
+    public static AddressSelection addressSelectionRandom = addreses ->
+        addreses.isEmpty() ?
+            Optional.empty() :
+            Optional.of(addreses.get(ThreadLocalRandom.current().nextInt(addreses.size())));
+
     public static Future<Optional<URI>> lookup(String name, ActorSystem actorSystem) {
+        return lookup(name, actorSystem, addressSelectionRandom);
+    }
+
+    public static Future<Optional<URI>> lookup(String name, ActorSystem actorSystem, AddressSelection addressSelection) {
         return
                 ServiceLocator$
                         .MODULE$
-                        .lookup(name, actorSystem)
+                        .lookup(name,
+                                new AbstractFunction1<Seq<URI>, Option<URI>>() {
+                                    @Override
+                                    public Option<URI> apply(Seq<URI> addresses) {
+                                        Optional<URI> lookup =
+                                                addressSelection.select(JavaConversions.seqAsJavaList(addresses));
+
+                                        return Option.apply(lookup.orElse(null));
+                                    }
+                                },
+                                actorSystem)
                         .map(
                                 new AbstractFunction1<Option<URI>, Optional<URI>>() {
                                     @Override

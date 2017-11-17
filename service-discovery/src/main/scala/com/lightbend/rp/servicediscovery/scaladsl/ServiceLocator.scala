@@ -18,44 +18,68 @@ package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor._
 import akka.pattern.ask
-import com.lightbend.dns.locator.{ ServiceLocator => DnsServiceLocator, Settings => DnsServiceLocatorSettings }
+import com.lightbend.dns.locator.{ServiceLocator => DnsServiceLocator, Settings => DnsServiceLocatorSettings}
 import com.lightbend.rp.common._
 import java.net.URI
+import java.util.concurrent.ThreadLocalRandom
+
+import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator.{AddressSelection, AddressSelectionRandom}
+
 import scala.concurrent.Future
 
 case class ServiceLocator(as: ActorSystem) {
-  def lookup(name: String): Future[Option[URI]] = ServiceLocator.lookup(name)(as)
+  def lookup(name: String, addressSelection: AddressSelection = AddressSelectionRandom): Future[Option[URI]] =
+    ServiceLocator.lookup(name)(as)
 }
 
 object ServiceLocator {
-  def lookup(name: String)(implicit as: ActorSystem): Future[Option[URI]] =
-    Platform.active match {
+  type AddressSelection = Seq[URI] => Option[URI]
+
+  val AddressSelectionRandom: AddressSelection =
+    services => if (services.isEmpty) None else Some(services(ThreadLocalRandom.current.nextInt(services.length)))
+
+  val AddressSelectionFirst: AddressSelection =
+    services => services.headOption
+
+  def lookup(name: String,
+             addressSelection: AddressSelection = AddressSelectionRandom)
+            (implicit as: ActorSystem): Future[Option[URI]] = {
+    val settings = Settings(as)
+
+    settings.externalServiceAddresses.get(name) match {
+      case Some(services) =>
+        Future.successful(addressSelection(services))
+
       case None =>
-        Future.successful(None)
+        Platform.active match {
+          case None =>
+            Future.successful(None)
 
-      case Some(Kubernetes) =>
-        import as.dispatcher
-        val locator = as.actorOf(Props[DnsServiceLocator])
-        val serviceLocatorSettings = DnsServiceLocatorSettings(as)
-        val settings = Settings(as)
+          case Some(Kubernetes) =>
+            import as.dispatcher
+            val locator = as.actorOf(Props[DnsServiceLocator])
+            val serviceLocatorSettings = DnsServiceLocatorSettings(as)
 
-        // The timeout value is deduced from the DnsServiceLocator logic
-        // which does upto three attempts (first timeout value twice, then second once)
-        // plus additional time for local processing
 
-        val askTimeout =
-          settings.askTimeout +
-            serviceLocatorSettings.resolveTimeout1 +
-            serviceLocatorSettings.resolveTimeout1 +
-            serviceLocatorSettings.resolveTimeout2
+            // The timeout value is deduced from the DnsServiceLocator logic
+            // which does upto three attempts (first timeout value twice, then second once)
+            // plus additional time for local processing
 
-        for {
-          result   <-
-            locator
-              .ask(DnsServiceLocator.GetAddress(name))(askTimeout)
-              .mapTo[DnsServiceLocator.Addresses]
-        } yield result.addresses.headOption.map(addressToUri)
+            val askTimeout =
+              settings.askTimeout +
+                serviceLocatorSettings.resolveTimeout1 +
+                serviceLocatorSettings.resolveTimeout1 +
+                serviceLocatorSettings.resolveTimeout2
+
+            for {
+              result <-
+              locator
+                .ask(DnsServiceLocator.GetAddress(name))(askTimeout)
+                .mapTo[DnsServiceLocator.Addresses]
+            } yield addressSelection(result.addresses.map(addressToUri))
+        }
     }
+  }
 
   private def addressToUri(a: DnsServiceLocator.ServiceAddress) =
     new URI(a.protocol, null, a.host, a.port, null, null, null)

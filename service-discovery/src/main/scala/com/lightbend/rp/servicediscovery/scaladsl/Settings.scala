@@ -18,13 +18,26 @@ package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor._
 import com.typesafe.config.Config
-
+import java.net.URI
+import scala.collection.JavaConverters._
+import scala.collection.immutable.Seq
 import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
 
 final class SettingsImpl(system: ExtendedActorSystem) extends Extension {
-  private val serviceDiscovery = system.settings.config.getConfig("reactive-lib.service-discovery")
+  private val serviceDiscovery = system.settings.config.getConfig("rp.service-discovery")
 
   val askTimeout: FiniteDuration = duration(serviceDiscovery, "ask-timeout")
+
+  val externalServiceAddresses: Map[String, Seq[URI]] = {
+    val data = serviceDiscovery.getObject("external-service-addresses")
+    val config = data.toConfig
+
+    data
+      .keySet()
+      .asScala
+      .map(k => k -> config.getStringList(k).asScala.toVector.map(new URI(_)))
+      .toMap
+  }
 
   private def duration(config: Config, key: String): FiniteDuration =
     Duration(config.getDuration(key, MILLISECONDS), MILLISECONDS)
