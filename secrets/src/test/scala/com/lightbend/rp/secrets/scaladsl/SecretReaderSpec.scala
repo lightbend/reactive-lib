@@ -21,8 +21,8 @@ import org.scalatest.{ Matchers, WordSpec }
 class SecretReaderSpec extends WordSpec with Matchers {
   "envName" should {
     "work" in {
-      SecretReader.envName("test", "hello") shouldBe "RP_TEST_HELLO"
-      SecretReader.envName("test3!!", "hello  there") shouldBe "RP_TEST3___HELLO__THERE"
+      SecretReader.envName("test", "hello") shouldBe "RP_SECRETS_TEST_HELLO"
+      SecretReader.envName("test3!!", "hello  there") shouldBe "RP_SECRETS_TEST3___HELLO__THERE"
     }
   }
 }
