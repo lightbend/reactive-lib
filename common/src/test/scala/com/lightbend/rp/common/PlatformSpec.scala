@@ -16,7 +16,7 @@
 
 package com.lightbend.rp.common
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 class PlatformSpec extends WordSpec with Matchers {
   "decode" should {

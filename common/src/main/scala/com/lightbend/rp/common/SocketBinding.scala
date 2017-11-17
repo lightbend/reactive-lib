@@ -84,10 +84,9 @@ object SocketBinding {
             .find(_._1 == normalized)
             .map {
               case (n, Some(v)) => s"$n${VersionSeparator.toUpperCase}$v"
-              case (n, None)   => n
+              case (n, None) => n
             }
             .getOrElse(normalized)
-
 
       s"RP_ENDPOINT_${fullName}_$suffix"
     }

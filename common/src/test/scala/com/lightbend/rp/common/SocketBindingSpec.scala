@@ -16,7 +16,7 @@
 
 package com.lightbend.rp.common
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 class SocketBindingSpec extends WordSpec with Matchers {
   val reader = new SocketBinding.EnvironmentReader(
@@ -27,8 +27,7 @@ class SocketBindingSpec extends WordSpec with Matchers {
       "RP_ENDPOINT_EP1-V10_BIND_PORT" -> "81",
       "RP_ENDPOINT_EP0-V9_HOST" -> "192.168.1.5",
       "RP_ENDPOINT_EP1-V10_HOST" -> "192.168.1.10",
-      "RP_ENDPOINT_EP1-V10_BIND_HOST" -> "0.0.0.0"
-    ))
+      "RP_ENDPOINT_EP1-V10_BIND_HOST" -> "0.0.0.0"))
 
   "bindHost" should {
     "fallback to host when missing" in {
