@@ -21,7 +21,7 @@ object SecretReader {
     Option(System.getenv(envName(namespace, name)))
 
   private[secrets] def envName(namespace: String, name: String): String =
-    s"RP_${namespace}_$name"
+    s"RP_SECRETS_${namespace}_$name"
       .toUpperCase
       .map(c => if (c.isLetterOrDigit) c else '_')
 }
