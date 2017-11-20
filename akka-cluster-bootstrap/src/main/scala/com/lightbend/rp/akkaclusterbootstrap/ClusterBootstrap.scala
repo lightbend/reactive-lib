@@ -16,13 +16,23 @@
 
 package com.lightbend.rp.akkaclusterbootstrap
 
+import java.util.UUID
+
 import akka.actor._
 import akka.cluster.Cluster
-import com.lightbend.rp.servicediscovery.scaladsl._
+import com.lightbend.rp.akkaclusterbootstrap.registrar.DispatchClient
 
 final class ClusterBootstrapImpl(system: ExtendedActorSystem) extends Extension {
   val cluster = Cluster(system)
-  val serviceLocator = ServiceLocator(system)
+  val id = UUID.randomUUID()
+
+  if (cluster.settings.SeedNodes.nonEmpty) {
+    system.log.warning("ClusterBootstrap is enabled but seed nodes are defined, no action will be taken")
+  } else {
+    system.log.info(s"Starting ClusterSupervisor: $id")
+
+    system.actorOf(ClusterSupervisor.props(id, new DispatchClient(system), Cluster(system)))
+  }
 }
 
 object ClusterBootstrap extends ExtensionId[ClusterBootstrapImpl] with ExtensionIdProvider {

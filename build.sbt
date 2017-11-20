@@ -209,6 +209,7 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.akka"       %% "akka-cluster"        % Versions.akka      % "provided",
+      "com.typesafe.akka"       %% "akka-testkit"        % Versions.akka      % "test",
       "net.databinder.dispatch" %% "dispatch-core"       % Versions.dispatch,
       "io.spray"                %% "spray-json"          % Versions.sprayJson
     ),
