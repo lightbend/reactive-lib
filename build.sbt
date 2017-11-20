@@ -18,7 +18,7 @@ lazy val Versions = new {
   val typesafeConfig    = "1.3.1"
 }
 
-def assemblyExcludeLocal(names: String*) =
+def assemblyExcludeLocal(names: Seq[String]*) =
   assemblyOption in assembly := {
     val options = (assemblyOption in assembly).value
 
@@ -28,8 +28,8 @@ def assemblyExcludeLocal(names: String*) =
           .filter(_.isDirectory)
           .map(dir => (dir, (dir ** "*").get))
           .flatMap { case (dir, files) =>
-            names.flatMap { name =>
-              val path = Seq("com", "lightbend", "rp", name).mkString(s"${Path.sep}")
+            names.flatMap { names =>
+              val path = (Seq("com", "lightbend", "rp") ++ names).mkString(s"${Path.sep}")
 
               if (files.exists(_.getAbsolutePath.contains(path)))
                 dir +: files
@@ -152,7 +152,7 @@ lazy val serviceDiscovery = createProject("reactive-lib-service-discovery", "ser
     ),
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
     assemblyInclude("akka-dns", "service-locator-dns"),
-    assemblyExcludeLocal("common")
+    assemblyExcludeLocal(Seq("common"))
   )
 
 lazy val serviceDiscoveryLagom13Java = createProject("reactive-lib-service-discovery-lagom13-java", "service-discovery-lagom13-java")
@@ -165,7 +165,7 @@ lazy val serviceDiscoveryLagom13Java = createProject("reactive-lib-service-disco
       "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom13 % "provided"
     ),
     assemblyInclude(),
-    assemblyExcludeLocal("common", "servicediscovery")
+    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
   )
 
 lazy val serviceDiscoveryLagom13Scala = createProject("reactive-lib-service-discovery-lagom13-scala", "service-discovery-lagom13-scala")
@@ -176,7 +176,7 @@ lazy val serviceDiscoveryLagom13Scala = createProject("reactive-lib-service-disc
       "com.lightbend.lagom" %% "lagom-scaladsl-client"   % Versions.lagom13 % "provided"
     ),
     assemblyInclude(),
-    assemblyExcludeLocal("common", "servicediscovery")
+    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
   )
 
 lazy val serviceDiscoveryLagom14Java = createProject("reactive-lib-service-discovery-lagom14-java", "service-discovery-lagom14-java")
@@ -189,7 +189,7 @@ lazy val serviceDiscoveryLagom14Java = createProject("reactive-lib-service-disco
       "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom14 % "provided"
     ),
     assemblyInclude(),
-    assemblyExcludeLocal("common", "servicediscovery")
+    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
   )
 
 lazy val serviceDiscoveryLagom14Scala = createProject("reactive-lib-service-discovery-lagom14-scala", "service-discovery-lagom14-scala")
@@ -200,7 +200,7 @@ lazy val serviceDiscoveryLagom14Scala = createProject("reactive-lib-service-disc
       "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom14 % "provided",
     ),
     assemblyInclude(),
-    assemblyExcludeLocal("common", "servicediscovery")
+    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
   )
 
 lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstrap", "akka-cluster-bootstrap")
@@ -230,7 +230,7 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
     },
-    assemblyExcludeLocal("common", "servicediscovery"),
+    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl")),
     assemblyInclude(
       "async-http-client",
       "async-http-client-netty-utils",
@@ -255,12 +255,12 @@ lazy val playHttpBinding = createProject("reactive-lib-play-http-binding", "play
   .dependsOn(common)
   .settings(
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
-    assemblyExcludeLocal("common")
+    assemblyExcludeLocal(Seq("common"))
   )
 
 lazy val secrets = createProject("reactive-lib-secrets", "secrets")
   .dependsOn(common)
   .settings(
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
-    assemblyExcludeLocal("common")
+    assemblyExcludeLocal(Seq("common"))
   )
