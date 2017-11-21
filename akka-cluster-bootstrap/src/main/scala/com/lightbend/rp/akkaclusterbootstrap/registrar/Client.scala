@@ -106,10 +106,10 @@ class DispatchClient(system: ActorSystem) extends Client {
 
   private def findRegistrar() =
     ServiceLocator
-      .lookupOne(settings.registrarServiceName)
+      .lookupOne(settings.registrarServiceName, settings.registrarEndpointName)
       .filter { uri =>
         if (uri.isEmpty) {
-          system.log.error(s"Unable to find registrar: ${settings.registrarServiceName}")
+          system.log.error(s"Unable to find registrar: ${settings.registrarServiceName} ${settings.registrarEndpointName}")
         }
 
         uri.nonEmpty

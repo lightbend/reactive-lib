@@ -44,15 +44,17 @@ public final class ServiceLocator {
             Optional.empty() :
             Optional.of(addreses.get(ThreadLocalRandom.current().nextInt(addreses.size())));
 
-    public static CompletionStage<Optional<URI>> lookup(String name, ActorSystem actorSystem) {
-        return lookup(name, actorSystem, addressSelectionRandom);
+    public static CompletionStage<Optional<URI>> lookup(String name, String endpoint, ActorSystem actorSystem) {
+        return lookup(name, endpoint, actorSystem, addressSelectionRandom);
     }
 
-    public static CompletionStage<Optional<URI>> lookup(String name, ActorSystem actorSystem, AddressSelection addressSelection) {
+    public static CompletionStage<Optional<URI>> lookup(String name, String endpoint, ActorSystem actorSystem, AddressSelection addressSelection) {
         return FutureConverters.toJava(
                 ServiceLocator$
                         .MODULE$
-                        .lookupOne(name,
+                        .lookupOne(
+                                name,
+                                endpoint,
                                 new AbstractFunction1<Seq<URI>, Option<URI>>() {
                                     @Override
                                     public Option<URI> apply(Seq<URI> addresses) {

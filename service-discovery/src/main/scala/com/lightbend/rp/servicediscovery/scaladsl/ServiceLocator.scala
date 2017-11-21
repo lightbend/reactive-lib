@@ -27,11 +27,11 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 case class ServiceLocator(as: ActorSystem) {
-  def lookupOne(name: String, addressSelection: AddressSelection = AddressSelectionRandom): Future[Option[URI]] =
-    ServiceLocator.lookupOne(name, addressSelection)(as)
+  def lookupOne(name: String, endpoint: String = "", addressSelection: AddressSelection = AddressSelectionRandom): Future[Option[URI]] =
+    ServiceLocator.lookupOne(name, endpoint, addressSelection)(as)
 
-  def lookup(name: String): Future[Seq[URI]] =
-    ServiceLocator.lookup(name)(as)
+  def lookup(name: String, endpoint: String = ""): Future[Seq[URI]] =
+    ServiceLocator.lookup(name, endpoint)(as)
 }
 
 object ServiceLocator {
@@ -45,29 +45,41 @@ object ServiceLocator {
 
   def lookupOne(
     name: String,
+    endpoint: String = "",
     addressSelection: AddressSelection = AddressSelectionRandom)(implicit as: ActorSystem): Future[Option[URI]] = {
     import as.dispatcher
 
     for {
-      addresses <- lookup(name)
+      addresses <- lookup(name, endpoint)
     } yield addressSelection(addresses)
   }
 
-  def lookup(name: String)(implicit as: ActorSystem): Future[Seq[URI]] =
-    doLookup(name, externalChecks = 0)
+  def lookup(name: String, endpoint: String = "")(implicit as: ActorSystem): Future[Seq[URI]] =
+    doLookup(name, endpoint, externalChecks = 0)
 
-  private def doLookup(name: String, externalChecks: Int)(implicit as: ActorSystem): Future[Seq[URI]] = {
+  private def doLookup(name: String, endpoint: String, externalChecks: Int)(implicit as: ActorSystem): Future[Seq[URI]] = {
     val settings = Settings(as)
 
     import as.dispatcher
 
-    settings.externalServiceAddresses.get(name) match {
+    val externalEntry =
+      if (endpoint.isEmpty)
+        name
+      else
+        s"$name/$endpoint"
+
+    settings.externalServiceAddresses.get(externalEntry) match {
       case Some(services) =>
         val resolved =
           services.map { uri =>
-            if (uri.getScheme == null && externalChecks < settings.externalServiceAddressLimit)
-              doLookup(uri.toString, externalChecks + 1)
-            else
+            if (uri.getScheme == null && externalChecks < settings.externalServiceAddressLimit) {
+              val parts = uri.toString.split("/", 2)
+
+              if (parts.length == 2)
+                doLookup(parts(0), parts(1), externalChecks + 1)
+              else
+                doLookup(parts(0), "", externalChecks + 1)
+            } else
               Future.successful(Seq(uri))
           }
 
@@ -96,12 +108,42 @@ object ServiceLocator {
 
             for {
               result <- locator
-                .ask(DnsServiceLocator.GetAddress(name))(askTimeout)
+                .ask(DnsServiceLocator.GetAddress(translateName(name, endpoint)))(askTimeout)
                 .mapTo[DnsServiceLocator.Addresses]
             } yield result.addresses.map(addressToUri).toVector
         }
     }
   }
+
+  private def translateName(name: String, endpoint: String) =
+    Platform.active match {
+      case Some(Kubernetes) =>
+        if (name.exists(dnsCharacters.contains) && endpoint.isEmpty) {
+          name
+        } else {
+          val serviceName = endpointServiceName(name)
+          val endpointName = endpointServiceName(endpoint)
+
+          // @TODO hardcoded _tcp
+          // @TODO namespace to consider here when it lands
+          // @TODO if endpoint is empty, consider this better
+
+          s"_$endpointName._tcp.$serviceName.default.svc.cluster.local"
+        }
+
+      case None =>
+        name
+    }
+
+  private val dnsCharacters = Set('_', '.')
+
+  private val validEndpointServiceChars =
+    (('0' to '9') ++ ('A' to 'Z') ++ ('a' to 'z') ++ Seq('-')).toSet
+
+  private def endpointServiceName(name: String): String =
+    name
+      .map(c => if (validEndpointServiceChars.contains(c)) c else '-')
+      .toLowerCase
 
   private def addressToUri(a: DnsServiceLocator.ServiceAddress) =
     new URI(a.protocol, null, a.host, a.port, null, null, null)

@@ -29,7 +29,8 @@ object ServiceLocatorSpec {
       s"""|rp.service-discovery {
           |  external-service-addresses {
           |    "has-one" = ["http://127.0.0.1:9000"]
-          |    "has-two" = ["http://127.0.0.1:8000", "http://127.0.0.1:8001"]
+          |    "has-two/some-endpoint" = ["http://127.0.0.1:8000", "http://127.0.0.1:8001"]
+          |    "test/my-lookup" = ["has-two/some-endpoint"]
           |
           |    "pointer-one" = ["pointer-two"]
           |    "pointer-two" = ["pointer-three"]
@@ -96,13 +97,13 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
     "resolve external services correctly (many #1)" in {
       ServiceLocator
-        .lookupOne("has-two", _.headOption)
+        .lookupOne("has-two", "some-endpoint", _.headOption)
         .map(_.contains(new URI("http://127.0.0.1:8000")) shouldBe true)
     }
 
     "resolve external services correctly (many #2)" in {
       ServiceLocator
-        .lookupOne("has-two", _.lastOption)
+        .lookupOne("has-two", "some-endpoint", _.lastOption)
         .map(_.contains(new URI("http://127.0.0.1:8001")) shouldBe true)
     }
 
@@ -110,6 +111,12 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
       ServiceLocator
         .lookupOne("pointer-one")
         .map(_.contains(new URI("pointer-four")) shouldBe true)
+    }
+
+    "recursively resolve name & endpoint" in {
+      ServiceLocator
+        .lookupOne("test", "my-lookup", _.headOption)
+        .map(_.contains(new URI("http://127.0.0.1:8000")) shouldBe true)
     }
   }
 }

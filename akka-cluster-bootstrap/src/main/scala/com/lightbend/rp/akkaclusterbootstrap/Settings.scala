@@ -33,6 +33,7 @@ class Settings private (system: ExtendedActorSystem) extends Extension {
   val registrarRegistrationAttempts: Int = settings.getInt("registrar-registration-attempts")
   val registrarRegistrationFailTimeout: FiniteDuration = duration(settings, "registrar-registration-fail-timeout")
   val registrarServiceName: String = settings.getString("registrar-service-name")
+  val registrarEndpointName: String = settings.getString("registrar-endpoint-name")
   val registrarTopicPattern: String = settings.getString("registrar-topic-pattern")
 
   private def duration(config: Config, key: String): FiniteDuration =
