@@ -30,7 +30,16 @@ object ServiceLocatorSpec {
           |  external-service-addresses {
           |    "has-one" = ["http://127.0.0.1:9000"]
           |    "has-two" = ["http://127.0.0.1:8000", "http://127.0.0.1:8001"]
+          |
+          |    "pointer-one" = ["pointer-two"]
+          |    "pointer-two" = ["pointer-three"]
+          |    "pointer-three" = ["pointer-four"]
+          |    "pointer-four" = ["pointer-five"]
+          |
+          |    "no-pointer-one" = ["tcp://hello"]
           |  }
+          |
+          |  external-service-address-limit = 2
           |}
           |""".stripMargin)
     .withFallback(ConfigFactory.defaultApplication())
@@ -87,14 +96,20 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
     "resolve external services correctly (many #1)" in {
       ServiceLocator
-        .lookup("has-two", _.headOption)
+        .lookupOne("has-two", _.headOption)
         .map(_.contains(new URI("http://127.0.0.1:8000")) shouldBe true)
     }
 
     "resolve external services correctly (many #2)" in {
       ServiceLocator
-        .lookup("has-two", _.lastOption)
+        .lookupOne("has-two", _.lastOption)
         .map(_.contains(new URI("http://127.0.0.1:8001")) shouldBe true)
+    }
+
+    "recursively resolve (upto a limit) if scheme is missing" in {
+      ServiceLocator
+        .lookupOne("pointer-one")
+        .map(_.contains(new URI("pointer-four")) shouldBe true)
     }
   }
 }

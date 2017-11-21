@@ -26,7 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import scala.runtime.AbstractFunction1;
 import scala.Option;
 import scala.collection.JavaConversions;
-import scala.collection.Seq;
+import scala.collection.immutable.Seq;
 import scala.compat.java8.FutureConverters;
 
 public final class ServiceLocator {
@@ -52,7 +52,7 @@ public final class ServiceLocator {
         return FutureConverters.toJava(
                 ServiceLocator$
                         .MODULE$
-                        .lookup(name,
+                        .lookupOne(name,
                                 new AbstractFunction1<Seq<URI>, Option<URI>>() {
                                     @Override
                                     public Option<URI> apply(Seq<URI> addresses) {

@@ -18,17 +18,19 @@ package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor._
 import akka.pattern.ask
-import com.lightbend.dns.locator.{ ServiceLocator => DnsServiceLocator, Settings => DnsServiceLocatorSettings }
 import com.lightbend.rp.common._
+import com.lightbend.dns.locator.{ ServiceLocator => DnsServiceLocator, Settings => DnsServiceLocatorSettings }
+import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator.{ AddressSelection, AddressSelectionRandom }
 import java.net.URI
 import java.util.concurrent.ThreadLocalRandom
-
-import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator.{ AddressSelection, AddressSelectionRandom }
-
+import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 case class ServiceLocator(as: ActorSystem) {
-  def lookup(name: String, addressSelection: AddressSelection = AddressSelectionRandom): Future[Option[URI]] =
+  def lookupOne(name: String, addressSelection: AddressSelection = AddressSelectionRandom): Future[Option[URI]] =
+    ServiceLocator.lookupOne(name, addressSelection)(as)
+
+  def lookup(name: String): Future[Seq[URI]] =
     ServiceLocator.lookup(name)(as)
 }
 
@@ -41,22 +43,44 @@ object ServiceLocator {
   val AddressSelectionFirst: AddressSelection =
     services => services.headOption
 
-  def lookup(
+  def lookupOne(
     name: String,
     addressSelection: AddressSelection = AddressSelectionRandom)(implicit as: ActorSystem): Future[Option[URI]] = {
+    import as.dispatcher
+
+    for {
+      addresses <- lookup(name)
+    } yield addressSelection(addresses)
+  }
+
+  def lookup(name: String)(implicit as: ActorSystem): Future[Seq[URI]] =
+    doLookup(name, externalChecks = 0)
+
+  private def doLookup(name: String, externalChecks: Int)(implicit as: ActorSystem): Future[Seq[URI]] = {
     val settings = Settings(as)
+
+    import as.dispatcher
 
     settings.externalServiceAddresses.get(name) match {
       case Some(services) =>
-        Future.successful(addressSelection(services))
+        val resolved =
+          services.map { uri =>
+            if (uri.getScheme == null && externalChecks < settings.externalServiceAddressLimit)
+              doLookup(uri.toString, externalChecks + 1)
+            else
+              Future.successful(Seq(uri))
+          }
+
+        for {
+          results <- Future.sequence(resolved)
+        } yield results.flatten.toVector
 
       case None =>
         Platform.active match {
           case None =>
-            Future.successful(None)
+            Future.successful(Seq.empty)
 
           case Some(Kubernetes) =>
-            import as.dispatcher
             val locator = as.actorOf(Props[DnsServiceLocator])
             val serviceLocatorSettings = DnsServiceLocatorSettings(as)
 
@@ -74,7 +98,7 @@ object ServiceLocator {
               result <- locator
                 .ask(DnsServiceLocator.GetAddress(name))(askTimeout)
                 .mapTo[DnsServiceLocator.Addresses]
-            } yield addressSelection(result.addresses.map(addressToUri))
+            } yield result.addresses.map(addressToUri).toVector
         }
     }
   }

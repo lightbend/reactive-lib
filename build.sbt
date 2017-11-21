@@ -18,6 +18,12 @@ lazy val Versions = new {
   val typesafeConfig    = "1.3.1"
 }
 
+/**
+ * This method excludes any files with a subdirectory sequence of `names` in the path. This
+ * is used to ensure that local project files from dependencies don't end up in the assembled
+ * jar. For instance, you call this with "common" to ensure no "com/lightbend/rp/common"
+ * directories end up in your jar.
+ */
 def assemblyExcludeLocal(names: Seq[String]*) =
   assemblyOption in assembly := {
     val options = (assemblyOption in assembly).value
