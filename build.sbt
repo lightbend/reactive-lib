@@ -230,7 +230,7 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
     },
-    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl")),
+    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery")),
     assemblyInclude(
       "async-http-client",
       "async-http-client-netty-utils",
