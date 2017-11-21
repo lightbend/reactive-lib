@@ -17,8 +17,9 @@
 package com.lightbend.rp.servicediscovery.javadsl;
 
 import akka.actor.ActorSystem;
+import com.lightbend.rp.servicediscovery.scaladsl.Service;
 import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator$;
-import java.net.URI;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -31,7 +32,7 @@ import scala.compat.java8.FutureConverters;
 
 public final class ServiceLocator {
     public interface AddressSelection {
-        Optional<URI> select(List<URI> addreses);
+        Optional<Service> select(List<Service> addreses);
     }
 
     public static AddressSelection addressSelectionFirst = addreses ->
@@ -44,21 +45,21 @@ public final class ServiceLocator {
             Optional.empty() :
             Optional.of(addreses.get(ThreadLocalRandom.current().nextInt(addreses.size())));
 
-    public static CompletionStage<Optional<URI>> lookup(String name, String endpoint, ActorSystem actorSystem) {
+    public static CompletionStage<Optional<Service>> lookup(String name, String endpoint, ActorSystem actorSystem) {
         return lookup(name, endpoint, actorSystem, addressSelectionRandom);
     }
 
-    public static CompletionStage<Optional<URI>> lookup(String name, String endpoint, ActorSystem actorSystem, AddressSelection addressSelection) {
+    public static CompletionStage<Optional<Service>> lookup(String name, String endpoint, ActorSystem actorSystem, AddressSelection addressSelection) {
         return FutureConverters.toJava(
                 ServiceLocator$
                         .MODULE$
                         .lookupOne(
                                 name,
                                 endpoint,
-                                new AbstractFunction1<Seq<URI>, Option<URI>>() {
+                                new AbstractFunction1<Seq<Service>, Option<Service>>() {
                                     @Override
-                                    public Option<URI> apply(Seq<URI> addresses) {
-                                        Optional<URI> lookup =
+                                    public Option<Service> apply(Seq<Service> addresses) {
+                                        Optional<Service> lookup =
                                                 addressSelection.select(JavaConversions.seqAsJavaList(addresses));
 
                                         return Option.apply(lookup.orElse(null));
@@ -66,9 +67,9 @@ public final class ServiceLocator {
                                 },
                                 actorSystem)
                         .map(
-                                new AbstractFunction1<Option<URI>, Optional<URI>>() {
+                                new AbstractFunction1<Option<Service>, Optional<Service>>() {
                                     @Override
-                                    public Optional<URI> apply(Option<URI> value) {
+                                    public Optional<Service> apply(Option<Service> value) {
                                         return value.isDefined() ? Optional.of(value.get()) : Optional.empty();
                                     }
                                 },

@@ -114,5 +114,5 @@ class DispatchClient(system: ActorSystem) extends Client {
 
         uri.nonEmpty
       }
-      .map(uri => Req(_.setUrl(RawUri(uri.get).toString)))
+      .map(service => Req(_.setUrl(RawUri(service.get.uri).toString)))
 }

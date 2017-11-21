@@ -17,9 +17,11 @@
 package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor._
+import akka.io.AsyncDnsResolver.SrvResolved
+import akka.io.Dns.Resolved
+import akka.io.{ Dns, IO }
 import akka.pattern.ask
 import com.lightbend.rp.common._
-import com.lightbend.dns.locator.{ ServiceLocator => DnsServiceLocator, Settings => DnsServiceLocatorSettings }
 import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator.{ AddressSelection, AddressSelectionRandom }
 import java.net.URI
 import java.util.concurrent.ThreadLocalRandom
@@ -27,15 +29,15 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 case class ServiceLocator(as: ActorSystem) {
-  def lookupOne(name: String, endpoint: String = "", addressSelection: AddressSelection = AddressSelectionRandom): Future[Option[URI]] =
+  def lookupOne(name: String, endpoint: String = "", addressSelection: AddressSelection = AddressSelectionRandom): Future[Option[Service]] =
     ServiceLocator.lookupOne(name, endpoint, addressSelection)(as)
 
-  def lookup(name: String, endpoint: String = ""): Future[Seq[URI]] =
+  def lookup(name: String, endpoint: String = ""): Future[Seq[Service]] =
     ServiceLocator.lookup(name, endpoint)(as)
 }
 
 object ServiceLocator {
-  type AddressSelection = Seq[URI] => Option[URI]
+  type AddressSelection = Seq[Service] => Option[Service]
 
   val AddressSelectionRandom: AddressSelection =
     services => if (services.isEmpty) None else Some(services(ThreadLocalRandom.current.nextInt(services.length)))
@@ -46,7 +48,7 @@ object ServiceLocator {
   def lookupOne(
     name: String,
     endpoint: String = "",
-    addressSelection: AddressSelection = AddressSelectionRandom)(implicit as: ActorSystem): Future[Option[URI]] = {
+    addressSelection: AddressSelection = AddressSelectionRandom)(implicit as: ActorSystem): Future[Option[Service]] = {
     import as.dispatcher
 
     for {
@@ -54,10 +56,18 @@ object ServiceLocator {
     } yield addressSelection(addresses)
   }
 
-  def lookup(name: String, endpoint: String = "")(implicit as: ActorSystem): Future[Seq[URI]] =
+  def lookup(name: String, endpoint: String = "")(implicit as: ActorSystem): Future[Seq[Service]] =
     doLookup(name, endpoint, externalChecks = 0)
 
-  private def doLookup(name: String, endpoint: String, externalChecks: Int)(implicit as: ActorSystem): Future[Seq[URI]] = {
+  private def normalizeProtocol(protocol: String, endpoint: String) =
+    if (protocol == "tcp" && (endpoint == "http" || endpoint.contains("http-") || endpoint.contains("-http")))
+      "http"
+    else
+      protocol
+
+  private def doLookup(name: String, endpoint: String, externalChecks: Int)(implicit as: ActorSystem): Future[Seq[Service]] = {
+    println(s"doLookup($name, $endpoint, $externalChecks)")
+
     val settings = Settings(as)
 
     import as.dispatcher
@@ -79,8 +89,9 @@ object ServiceLocator {
                 doLookup(parts(0), parts(1), externalChecks + 1)
               else
                 doLookup(parts(0), "", externalChecks + 1)
-            } else
-              Future.successful(Seq(uri))
+            } else {
+              Future.successful(Seq(Service(name, uri)))
+            }
           }
 
         for {
@@ -93,24 +104,48 @@ object ServiceLocator {
             Future.successful(Seq.empty)
 
           case Some(Kubernetes) =>
-            val locator = as.actorOf(Props[DnsServiceLocator])
-            val serviceLocatorSettings = DnsServiceLocatorSettings(as)
-
-            // The timeout value is deduced from the DnsServiceLocator logic
-            // which does upto three attempts (first timeout value twice, then second once)
-            // plus additional time for local processing
-
-            val askTimeout =
-              settings.askTimeout +
-                serviceLocatorSettings.resolveTimeout1 +
-                serviceLocatorSettings.resolveTimeout1 +
-                serviceLocatorSettings.resolveTimeout2
+            val nameToLookup = translateName(name, endpoint)
 
             for {
-              result <- locator
-                .ask(DnsServiceLocator.GetAddress(translateName(name, endpoint)))(askTimeout)
-                .mapTo[DnsServiceLocator.Addresses]
-            } yield result.addresses.map(addressToUri).toVector
+              result <- IO(Dns)
+                .ask(Dns.Resolve(nameToLookup))(settings.askTimeout)
+                .flatMap {
+                  case SrvResolved(srvName, records) =>
+                    val lookups =
+                      for {
+                        record <- records
+                      } yield {
+                        IO(Dns)
+                          .ask(Dns.Resolve(record.target))(settings.askTimeout)
+                          .collect {
+                            case r: Resolved =>
+                              val components = srvName.split('.')
+
+                              val protocol =
+                                if (components.length >= 2)
+                                  normalizeProtocol(components(1).dropWhile(_ == '_'), endpoint)
+                                else
+                                  null
+
+                              val uris =
+                                r.ipv4.map(v4 => new URI(protocol, null, v4.getHostAddress, record.port, null, null, null)) ++
+                                  r.ipv6.map(v6 => new URI(protocol, null, v6.getHostAddress, record.port, null, null, null))
+
+                              uris.map(u => Service(record.target, u))
+                          }
+                      }
+
+                    Future
+                      .sequence(lookups)
+                      .map(_.flatten.toVector)
+
+                  case _: Resolved =>
+                    // Future improvement: support regular DNS
+
+                    Future.successful(Seq.empty)
+
+                }
+            } yield result
         }
     }
   }
@@ -144,7 +179,4 @@ object ServiceLocator {
     name
       .map(c => if (validEndpointServiceChars.contains(c)) c else '-')
       .toLowerCase
-
-  private def addressToUri(a: DnsServiceLocator.ServiceAddress) =
-    new URI(a.protocol, null, a.host, a.port, null, null, null)
 }

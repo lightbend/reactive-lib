@@ -65,12 +65,12 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
     "work for non-empty sequences" in {
       ServiceLocator.AddressSelectionFirst(
-        Seq(new URI("http://127.0.0.1:9000"))).contains(new URI("http://127.0.0.1:9000")) shouldBe true
+        Seq(Service("one", new URI("http://127.0.0.1:9000")))).contains(Service("one", new URI("http://127.0.0.1:9000"))) shouldBe true
 
       ServiceLocator.AddressSelectionFirst(
         Seq(
-          new URI("http://127.0.0.1:9000"),
-          new URI("http://127.0.0.1:9001"))).contains(new URI("http://127.0.0.1:9000")) shouldBe true
+          Service("one1", new URI("http://127.0.0.1:9000")),
+          Service("one2", new URI("http://127.0.0.1:9001")))).contains(Service("one1", new URI("http://127.0.0.1:9000"))) shouldBe true
     }
   }
 
@@ -81,10 +81,10 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
     "work for non-empty sequences" in {
       ServiceLocator.AddressSelectionRandom(
-        Seq(new URI("http://127.0.0.1:9000"))).contains(new URI("http://127.0.0.1:9000")) shouldBe true
+        Seq(Service("test", new URI("http://127.0.0.1:9000")))).contains(Service("test", new URI("http://127.0.0.1:9000"))) shouldBe true
 
       ServiceLocator.AddressSelectionRandom(
-        Seq(new URI("http://127.0.0.1:9000"), new URI("http://127.0.0.1:9001"))).nonEmpty shouldBe true
+        Seq(Service("test1", new URI("http://127.0.0.1:9000")), Service("test2", new URI("http://127.0.0.1:9001")))).nonEmpty shouldBe true
     }
   }
 
@@ -92,31 +92,34 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
     "resolve external services correctly (one)" in {
       ServiceLocator
         .lookup("has-one")
-        .map(_.contains(new URI("http://127.0.0.1:9000")) shouldBe true)
+        .map(_.contains(Service("has-one", new URI("http://127.0.0.1:9000"))) shouldBe true)
     }
 
     "resolve external services correctly (many #1)" in {
       ServiceLocator
         .lookupOne("has-two", "some-endpoint", _.headOption)
-        .map(_.contains(new URI("http://127.0.0.1:8000")) shouldBe true)
+        .map(_.contains(Service("has-two", new URI("http://127.0.0.1:8000"))) shouldBe true)
     }
 
     "resolve external services correctly (many #2)" in {
       ServiceLocator
         .lookupOne("has-two", "some-endpoint", _.lastOption)
-        .map(_.contains(new URI("http://127.0.0.1:8001")) shouldBe true)
+        .map(_.contains(Service("has-two", new URI("http://127.0.0.1:8001"))) shouldBe true)
     }
 
     "recursively resolve (upto a limit) if scheme is missing" in {
       ServiceLocator
         .lookupOne("pointer-one")
-        .map(_.contains(new URI("pointer-four")) shouldBe true)
+        .map(_.contains(Service("pointer-three", new URI("pointer-four"))) shouldBe true)
     }
 
     "recursively resolve name & endpoint" in {
       ServiceLocator
+        .lookupOne("test", "my-lookup", _.headOption).foreach(println)
+
+      ServiceLocator
         .lookupOne("test", "my-lookup", _.headOption)
-        .map(_.contains(new URI("http://127.0.0.1:8000")) shouldBe true)
+        .map(_.contains(Service("has-two", new URI("http://127.0.0.1:8000"))) shouldBe true)
     }
   }
 }

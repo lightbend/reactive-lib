@@ -20,10 +20,13 @@ import akka.actor.ActorSystem;
 import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.client.CircuitBreakersPanel;
 import com.lightbend.lagom.javadsl.client.CircuitBreakingServiceLocator;
+import com.lightbend.rp.servicediscovery.scaladsl.Service;
+
 import javax.inject.Inject;
 import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 public class LagomServiceLocator extends CircuitBreakingServiceLocator {
     private final ActorSystem actorSystem;
@@ -37,6 +40,18 @@ public class LagomServiceLocator extends CircuitBreakingServiceLocator {
 
     @Override
     public CompletionStage<Optional<URI>> locate(String name, Descriptor.Call<?, ?> serviceCall) {
-        return com.lightbend.rp.servicediscovery.javadsl.ServiceLocator.lookup(name, "lagom-api", actorSystem);
+        return com.lightbend.rp.servicediscovery.javadsl.ServiceLocator
+                .lookup(name, "lagom-api", actorSystem)
+                .thenApply(new Function<Optional<Service>, Optional<URI>>() {
+                    @Override
+                    public Optional<URI> apply(Optional<Service> service) {
+                        return service.map(new Function<Service, URI>() {
+                            @Override
+                            public URI apply(Service service) {
+                                return service.uri();
+                            }
+                        });
+                    }
+                });
     }
 }
