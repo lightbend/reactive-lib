@@ -21,12 +21,13 @@ import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator$;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import scala.runtime.AbstractFunction1;
 import scala.Option;
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
-import scala.concurrent.Future;
+import scala.compat.java8.FutureConverters;
 
 public final class ServiceLocator {
     public interface AddressSelection {
@@ -43,12 +44,12 @@ public final class ServiceLocator {
             Optional.empty() :
             Optional.of(addreses.get(ThreadLocalRandom.current().nextInt(addreses.size())));
 
-    public static Future<Optional<URI>> lookup(String name, ActorSystem actorSystem) {
+    public static CompletionStage<Optional<URI>> lookup(String name, ActorSystem actorSystem) {
         return lookup(name, actorSystem, addressSelectionRandom);
     }
 
-    public static Future<Optional<URI>> lookup(String name, ActorSystem actorSystem, AddressSelection addressSelection) {
-        return
+    public static CompletionStage<Optional<URI>> lookup(String name, ActorSystem actorSystem, AddressSelection addressSelection) {
+        return FutureConverters.toJava(
                 ServiceLocator$
                         .MODULE$
                         .lookup(name,
@@ -71,7 +72,8 @@ public final class ServiceLocator {
                                 },
 
                                 actorSystem.dispatcher()
-                        );
+                        )
+        );
 
     }
 }
