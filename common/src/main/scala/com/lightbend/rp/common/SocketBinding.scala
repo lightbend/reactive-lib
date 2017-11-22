@@ -20,6 +20,14 @@ import scala.collection.immutable.Seq
 import scala.collection.JavaConverters._
 
 object SocketBinding {
+  private val ValidEndpointChars =
+    (('0' to '9') ++ ('A' to 'Z') ++ Seq('_', '-')).toSet
+
+  private val ProcotolMapping: Map[String, SocketProtocol] = Map(
+    "http" -> HttpSocketProtocol,
+    "tcp" -> TcpSocketProtocol,
+    "udp" -> UdpSocketProtocol)
+
   private val reader = new EnvironmentReader(sys.env)
 
   def bindHost(name: String, default: String): String = reader.bindHost(name, default)
@@ -33,8 +41,6 @@ object SocketBinding {
   def protocol(name: String): Option[SocketProtocol] = reader.protocol(name)
 
   private[common] class EnvironmentReader(environment: Map[String, String]) {
-    private val ValidEndpointChars =
-      (('0' to '9') ++ ('A' to 'Z') ++ Seq('_', '-')).toSet
 
     def bindHost(name: String, default: String): String =
       environment
@@ -55,14 +61,10 @@ object SocketBinding {
       environment.get(assembleName(name, "PORT")).fold(default)(_.toInt)
 
     def protocol(name: String): Option[SocketProtocol] =
-      environment
-        .get(assembleName(name, "PROTOCOL"))
-        .flatMap {
-          case "http" => Some(HttpSocketProtocol)
-          case "tcp" => Some(TcpSocketProtocol)
-          case "udp" => Some(UdpSocketProtocol)
-          case _ => None
-        }
+      for {
+        name <- environment.get(assembleName(name, "PROTOCOL"))
+        protocol <- ProcotolMapping.get(name)
+      } yield protocol
 
     val all: Seq[String] =
       environment
