@@ -22,42 +22,152 @@ import akka.io.Dns.Resolved
 import akka.io.{ Dns, IO }
 import akka.pattern.ask
 import com.lightbend.rp.common._
-import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator.{ AddressSelection, AddressSelectionRandom }
+import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocatorLike.{ AddressSelection, AddressSelectionRandom }
 import java.net.URI
 import java.util.concurrent.ThreadLocalRandom
+
+import ru.smslv.akka.dns.raw.SRVRecord
+
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 case class ServiceLocator(as: ActorSystem) {
-  def lookupOne(name: String, endpoint: String = "", addressSelection: AddressSelection = AddressSelectionRandom): Future[Option[Service]] =
-    ServiceLocator.lookupOne(name, endpoint, addressSelection)(as)
+  def lookupOne(namespace: String, name: String, endpoint: String): Future[Option[Service]] =
+    ServiceLocator.lookupOne(namespace, name, endpoint)(as)
 
-  def lookup(name: String, endpoint: String = ""): Future[Seq[Service]] =
+  def lookupOne(namespace: String, name: String): Future[Option[Service]] =
+    ServiceLocator.lookupOne(namespace, name)(as)
+
+  def lookupOne(name: String): Future[Option[Service]] =
+    ServiceLocator.lookupOne(name)(as)
+
+  def lookupOne(namespace: String, name: String, endpoint: String, addressSelection: AddressSelection): Future[Option[Service]] =
+    ServiceLocator.lookupOne(namespace, name, endpoint, addressSelection)(as)
+
+  def lookupOne(namespace: String, name: String, addressSelection: AddressSelection): Future[Option[Service]] =
+    ServiceLocator.lookupOne(namespace, name, addressSelection)(as)
+
+  def lookupOne(name: String, addressSelection: AddressSelection): Future[Option[Service]] =
+    ServiceLocator.lookupOne(name, addressSelection)(as)
+
+  def lookup(namespace: String, name: String, endpoint: String): Future[Seq[Service]] =
+    ServiceLocator.lookup(namespace, name, endpoint)(as)
+
+  def lookup(name: String, endpoint: String): Future[Seq[Service]] =
     ServiceLocator.lookup(name, endpoint)(as)
+
+  def lookup(name: String): Future[Seq[Service]] =
+    ServiceLocator.lookup(name)(as)
 }
 
-object ServiceLocator {
+object ServiceLocator extends ServiceLocatorLike {
+  def dnsResolver(implicit as: ActorSystem): ActorRef = IO(Dns)
+
+  def env: Map[String, String] = sys.env
+
+  def targetRuntime: Option[Platform] = Platform.active
+
+}
+
+object ServiceLocatorLike {
   type AddressSelection = Seq[Service] => Option[Service]
 
   val AddressSelectionRandom: AddressSelection =
     services => if (services.isEmpty) None else Some(services(ThreadLocalRandom.current.nextInt(services.length)))
 
-  val AddressSelectionFirst: AddressSelection =
-    services => services.headOption
+  val AddressSelectionFirst: AddressSelection = services =>
+    services.headOption
+}
 
-  def lookupOne(
-    name: String,
-    endpoint: String = "",
-    addressSelection: AddressSelection = AddressSelectionRandom)(implicit as: ActorSystem): Future[Option[Service]] = {
+trait ServiceLocatorLike {
+  val DnsCharacters: Set[Char] = Set('_', '.')
+
+  val ValidEndpointServiceChars: Set[Char] =
+    (('0' to '9') ++ ('A' to 'Z') ++ ('a' to 'z') ++ Seq('-')).toSet
+
+  def targetRuntime: Option[Platform]
+  def dnsResolver(implicit as: ActorSystem): ActorRef
+  def env: Map[String, String]
+
+  def translateName(namespace: Option[String], name: String, endpoint: String): String =
+    targetRuntime match {
+      case Some(Kubernetes) =>
+        if (name.exists(DnsCharacters.contains) && endpoint.isEmpty) {
+          name
+        } else {
+          val serviceNamespace = namespace.orElse(namespaceFromEnv()).getOrElse("default")
+          val serviceName = endpointServiceName(name)
+          val endpointName = endpointServiceName(endpoint)
+
+          // @TODO hardcoded _tcp
+          // @TODO if endpoint is empty, consider this better - can you even lookup if the endpoint is empty???
+          s"_$endpointName._tcp.$serviceName.$serviceNamespace.svc.cluster.local"
+        }
+
+      case None =>
+        name
+    }
+
+  def translateProtocol(endpoint: String, srvName: String): Option[String] =
+    targetRuntime match {
+      case Some(Kubernetes) =>
+        Option(srvName.split('.'))
+          .filter(_.length >= 2)
+          .map(parts => normalizeProtocol(parts(1).dropWhile(_ == '_'), endpoint))
+
+      case _ => Option.empty
+    }
+
+  def translateResolved(protocol: Option[String], srvRecord: SRVRecord, addressARecord: Dns.Resolved): Seq[Service] =
+    targetRuntime match {
+      case Some(Kubernetes) =>
+        val uris =
+          addressARecord.ipv4.map(v4 => new URI(protocol.orNull, null, v4.getHostAddress, srvRecord.port, null, null, null)) ++
+            addressARecord.ipv6.map(v6 => new URI(protocol.orNull, null, v6.getHostAddress, srvRecord.port, null, null, null))
+
+        uris.map(u => Service(srvRecord.target, u))
+      case None =>
+        Seq.empty
+    }
+
+  def lookupOne(namespace: String, name: String, endpoint: String, addressSelection: AddressSelection)(implicit as: ActorSystem): Future[Option[Service]] = {
     import as.dispatcher
-
-    for {
-      addresses <- lookup(name, endpoint)
-    } yield addressSelection(addresses)
+    lookup(namespace, name, endpoint).map(addressSelection)
   }
 
-  def lookup(name: String, endpoint: String = "")(implicit as: ActorSystem): Future[Seq[Service]] =
-    doLookup(name, endpoint, externalChecks = 0)
+  def lookupOne(name: String, endpoint: String, addressSelection: AddressSelection)(implicit as: ActorSystem): Future[Option[Service]] = {
+    import as.dispatcher
+    lookup(name, endpoint).map(addressSelection)
+  }
+
+  def lookupOne(name: String, addressSelection: AddressSelection)(implicit as: ActorSystem): Future[Option[Service]] = {
+    import as.dispatcher
+    lookup(name).map(addressSelection)
+  }
+
+  def lookupOne(namespace: String, name: String, endpoint: String)(implicit as: ActorSystem): Future[Option[Service]] = {
+    import as.dispatcher
+    lookup(namespace, name, endpoint).map(AddressSelectionRandom)
+  }
+
+  def lookupOne(name: String, endpoint: String)(implicit as: ActorSystem): Future[Option[Service]] = {
+    import as.dispatcher
+    lookup(name, endpoint).map(AddressSelectionRandom)
+  }
+
+  def lookupOne(name: String)(implicit as: ActorSystem): Future[Option[Service]] = {
+    import as.dispatcher
+    lookup(name).map(AddressSelectionRandom)
+  }
+
+  def lookup(namespace: String, name: String, endpoint: String)(implicit as: ActorSystem): Future[Seq[Service]] =
+    doLookup(namespace = Option(namespace).filter(_.nonEmpty), name, endpoint, externalChecks = 0)
+
+  def lookup(name: String, endpoint: String)(implicit as: ActorSystem): Future[Seq[Service]] =
+    doLookup(namespace = None, name, endpoint, externalChecks = 0)
+
+  def lookup(name: String)(implicit as: ActorSystem): Future[Seq[Service]] =
+    doLookup(namespace = None, name, endpoint = "", externalChecks = 0)
 
   private def normalizeProtocol(protocol: String, endpoint: String) =
     if (protocol == "tcp" && (endpoint == "http" || endpoint.contains("http-") || endpoint.contains("-http")))
@@ -65,7 +175,7 @@ object ServiceLocator {
     else
       protocol
 
-  private def doLookup(name: String, endpoint: String, externalChecks: Int)(implicit as: ActorSystem): Future[Seq[Service]] = {
+  private def doLookup(namespace: Option[String], name: String, endpoint: String, externalChecks: Int)(implicit as: ActorSystem): Future[Seq[Service]] = {
     val settings = Settings(as)
 
     import as.dispatcher
@@ -84,9 +194,9 @@ object ServiceLocator {
               val parts = uri.toString.split("/", 2)
 
               if (parts.length == 2)
-                doLookup(parts(0), parts(1), externalChecks + 1)
+                doLookup(namespace, parts(0), parts(1), externalChecks + 1)
               else
-                doLookup(parts(0), "", externalChecks + 1)
+                doLookup(namespace, parts(0), "", externalChecks + 1)
             } else {
               Future.successful(Seq(Service(name, uri)))
             }
@@ -97,39 +207,28 @@ object ServiceLocator {
         } yield results.flatten.toVector
 
       case None =>
-        Platform.active match {
+        targetRuntime match {
           case None =>
             Future.successful(Seq.empty)
 
           case Some(Kubernetes) =>
-            val nameToLookup = translateName(name, endpoint)
+            val nameToLookup = translateName(namespace, name, endpoint)
 
             for {
-              result <- IO(Dns)
+              result <- dnsResolver
                 .ask(Dns.Resolve(nameToLookup))(settings.askTimeout)
                 .flatMap {
-                  case SrvResolved(srvName, records) =>
+                  case SrvResolved(srvName, srvRecords) =>
+                    val protocol = translateProtocol(endpoint, srvName)
                     val lookups =
                       for {
-                        record <- records
+                        srvRecord <- srvRecords
                       } yield {
-                        IO(Dns)
-                          .ask(Dns.Resolve(record.target))(settings.askTimeout)
+                        dnsResolver
+                          .ask(Dns.Resolve(srvRecord.target))(settings.askTimeout)
                           .collect {
-                            case r: Resolved =>
-                              val components = srvName.split('.')
-
-                              val protocol =
-                                if (components.length >= 2)
-                                  normalizeProtocol(components(1).dropWhile(_ == '_'), endpoint)
-                                else
-                                  null
-
-                              val uris =
-                                r.ipv4.map(v4 => new URI(protocol, null, v4.getHostAddress, record.port, null, null, null)) ++
-                                  r.ipv6.map(v6 => new URI(protocol, null, v6.getHostAddress, record.port, null, null, null))
-
-                              uris.map(u => Service(record.target, u))
+                            case aRecord: Resolved =>
+                              translateResolved(protocol, srvRecord, aRecord)
                           }
                       }
 
@@ -148,33 +247,11 @@ object ServiceLocator {
     }
   }
 
-  private def translateName(name: String, endpoint: String) =
-    Platform.active match {
-      case Some(Kubernetes) =>
-        if (name.exists(dnsCharacters.contains) && endpoint.isEmpty) {
-          name
-        } else {
-          val serviceName = endpointServiceName(name)
-          val endpointName = endpointServiceName(endpoint)
-
-          // @TODO hardcoded _tcp
-          // @TODO namespace to consider here when it lands
-          // @TODO if endpoint is empty, consider this better
-
-          s"_$endpointName._tcp.$serviceName.default.svc.cluster.local"
-        }
-
-      case None =>
-        name
-    }
-
-  private val dnsCharacters = Set('_', '.')
-
-  private val validEndpointServiceChars =
-    (('0' to '9') ++ ('A' to 'Z') ++ ('a' to 'z') ++ Seq('-')).toSet
+  protected def namespaceFromEnv(): Option[String] =
+    env.get("RP_NAMESPACE")
 
   private def endpointServiceName(name: String): String =
     name
-      .map(c => if (validEndpointServiceChars.contains(c)) c else '-')
+      .map(c => if (ValidEndpointServiceChars.contains(c)) c else '-')
       .toLowerCase
 }

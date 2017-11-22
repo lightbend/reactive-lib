@@ -41,17 +41,7 @@ public class LagomServiceLocator extends CircuitBreakingServiceLocator {
     @Override
     public CompletionStage<Optional<URI>> locate(String name, Descriptor.Call<?, ?> serviceCall) {
         return com.lightbend.rp.servicediscovery.javadsl.ServiceLocator
-                .lookup(name, "lagom-api", actorSystem)
-                .thenApply(new Function<Optional<Service>, Optional<URI>>() {
-                    @Override
-                    public Optional<URI> apply(Optional<Service> service) {
-                        return service.map(new Function<Service, URI>() {
-                            @Override
-                            public URI apply(Service service) {
-                                return service.uri();
-                            }
-                        });
-                    }
-                });
+                .lookupOne(name, "lagom-api", actorSystem)
+                .thenApply(service -> service.map(Service::uri));
     }
 }
