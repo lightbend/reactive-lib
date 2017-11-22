@@ -66,8 +66,6 @@ object ServiceLocator {
       protocol
 
   private def doLookup(name: String, endpoint: String, externalChecks: Int)(implicit as: ActorSystem): Future[Seq[Service]] = {
-    println(s"doLookup($name, $endpoint, $externalChecks)")
-
     val settings = Settings(as)
 
     import as.dispatcher
