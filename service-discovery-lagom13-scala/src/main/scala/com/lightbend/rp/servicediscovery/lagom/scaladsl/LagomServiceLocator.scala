@@ -30,5 +30,7 @@ import scala.language.reflectiveCalls
 class LagomServiceLocator(circuitBreakers: CircuitBreakers)(implicit as: ActorSystem, ec: ExecutionContext) extends CircuitBreakingServiceLocator(circuitBreakers)(ec) {
 
   override def locate(name: String, serviceCall: Descriptor.Call[_, _]): Future[Option[JavaURI]] =
-    ServiceLocator.lookup(name)
+    ServiceLocator
+      .lookupOne(name, "lagom-api")
+      .map(_.map(_.uri))
 }

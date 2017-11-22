@@ -39,6 +39,8 @@ final class SettingsImpl(system: ExtendedActorSystem) extends Extension {
       .toMap
   }
 
+  val externalServiceAddressLimit: Int = serviceDiscovery.getInt("external-service-address-limit")
+
   private def duration(config: Config, key: String): FiniteDuration =
     Duration(config.getDuration(key, MILLISECONDS), MILLISECONDS)
 }

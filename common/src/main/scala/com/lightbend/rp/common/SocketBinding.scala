@@ -20,6 +20,14 @@ import scala.collection.immutable.Seq
 import scala.collection.JavaConverters._
 
 object SocketBinding {
+  private val ValidEndpointChars =
+    (('0' to '9') ++ ('A' to 'Z') ++ Seq('_', '-')).toSet
+
+  private val ProcotolMapping: Map[String, SocketProtocol] = Map(
+    "http" -> HttpSocketProtocol,
+    "tcp" -> TcpSocketProtocol,
+    "udp" -> UdpSocketProtocol)
+
   private val reader = new EnvironmentReader(sys.env)
 
   def bindHost(name: String, default: String): String = reader.bindHost(name, default)
@@ -30,11 +38,9 @@ object SocketBinding {
 
   def port(name: String, default: Int): Int = reader.port(name, default)
 
-  private[common] class EnvironmentReader(environment: Map[String, String]) {
-    private val VersionSeparator = "-v"
+  def protocol(name: String): Option[SocketProtocol] = reader.protocol(name)
 
-    private val ValidEndpointChars =
-      (('0' to '9') ++ ('A' to 'Z') ++ Seq('_', '-')).toSet
+  private[common] class EnvironmentReader(environment: Map[String, String]) {
 
     def bindHost(name: String, default: String): String =
       environment
@@ -54,42 +60,20 @@ object SocketBinding {
     def port(name: String, default: Int): Int =
       environment.get(assembleName(name, "PORT")).fold(default)(_.toInt)
 
+    def protocol(name: String): Option[SocketProtocol] =
+      for {
+        name <- environment.get(assembleName(name, "PROTOCOL"))
+        protocol <- ProcotolMapping.get(name)
+      } yield protocol
+
     val all: Seq[String] =
       environment
         .getOrElse("RP_ENDPOINTS", "")
         .split(',')
         .toVector
 
-    val namesAndVersions: Seq[(String, Option[String])] =
-      all.map { name =>
-        val parts = name
-          .reverse
-          .split(VersionSeparator.toUpperCase.reverse, 2)
-          .map(_.reverse)
-
-        if (parts.length == 2)
-          parts(1) -> Some(parts(0))
-        else
-          parts(0) -> None
-      }
-
-    private def assembleName(name: String, suffix: String): String = {
-      val normalized = normalizeEndpointName(name)
-
-      val fullName =
-        if (all.contains(normalized))
-          normalized
-        else
-          namesAndVersions
-            .find(_._1 == normalized)
-            .map {
-              case (n, Some(v)) => s"$n${VersionSeparator.toUpperCase}$v"
-              case (n, None) => n
-            }
-            .getOrElse(normalized)
-
-      s"RP_ENDPOINT_${fullName}_$suffix"
-    }
+    private def assembleName(name: String, suffix: String): String =
+      s"RP_ENDPOINT_${normalizeEndpointName(name)}_$suffix"
 
     private def normalizeEndpointName(endpointName: String): String =
       endpointName

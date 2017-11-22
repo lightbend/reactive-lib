@@ -18,12 +18,14 @@ package com.lightbend.rp.servicediscovery.javadsl
 
 import akka.actor.ActorSystem
 import akka.testkit.{ ImplicitSender, TestKit }
-import com.lightbend.rp.servicediscovery.scaladsl.Settings
+import com.lightbend.rp.servicediscovery.scaladsl.{ Service, Settings }
 import com.typesafe.config.ConfigFactory
 import java.net.URI
 import java.util.Optional
+
 import org.scalatest.{ AsyncWordSpecLike, BeforeAndAfterAll, Matchers }
-import scala.collection.JavaConversions._
+
+import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 
 object ServiceLocatorSpec {
@@ -53,24 +55,24 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
   "addressSelectionFirst" should {
     "work for empty lists" in {
-      ServiceLocator.addressSelectionFirst.select(Seq()) shouldBe Optional.empty[URI]()
+      ServiceLocator.addressSelectionFirst.select(Seq().asJava) shouldBe Optional.empty[URI]()
     }
 
     "work for non-empty lists" in {
       ServiceLocator.addressSelectionFirst.select(
         Seq(
-          new URI("http://127.0.0.1:9000"),
-          new URI("http://127.0.0.1:9001"))).get() shouldBe new URI("http://127.0.0.1:9000")
+          Service("myservice.com", new URI("http://127.0.0.1:9000")),
+          Service("myotherservice.com", new URI("http://127.0.0.1:9001"))).asJava).get() shouldBe Service("myservice.com", new URI("http://127.0.0.1:9000"))
     }
   }
 
   "addressSelectionRandom" should {
     "work for empty lists" in {
-      ServiceLocator.addressSelectionFirst.select(Seq()) shouldBe Optional.empty[URI]()
+      ServiceLocator.addressSelectionFirst.select(Seq().asJava) shouldBe Optional.empty[URI]()
     }
 
     "work for non-empty lists" in {
-      ServiceLocator.addressSelectionFirst.select(Seq(new URI("http://127.0.0.1:9000"))).isPresent shouldBe true
+      ServiceLocator.addressSelectionFirst.select(Seq(Service("hello", new URI("http://127.0.0.1:9000"))).asJava).isPresent shouldBe true
     }
   }
 }

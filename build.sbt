@@ -13,11 +13,16 @@ lazy val Versions = new {
   val scala212          = "2.12.3"
   val scalaJava8Compat  = "0.8.0"
   val scalaTest         = "3.0.1"
-  val serviceLocatorDns = "2.2.2"
   val sprayJson         = "1.3.3"
   val typesafeConfig    = "1.3.1"
 }
 
+/**
+ * This method excludes any files with a subdirectory sequence of `names` in the path. This
+ * is used to ensure that local project files from dependencies don't end up in the assembled
+ * jar. For instance, you call this with "common" to ensure no "com/lightbend/rp/common"
+ * directories end up in your jar.
+ */
 def assemblyExcludeLocal(names: Seq[String]*) =
   assemblyOption in assembly := {
     val options = (assemblyOption in assembly).value
@@ -133,12 +138,10 @@ lazy val serviceDiscoveryAssemblySettings = Vector(
     "com.typesafe.akka"        %% "akka-actor"          % Versions.akka              % "provided",
     "com.typesafe"              % "config"              % Versions.typesafeConfig    % "provided",
     "org.scala-lang.modules"   %% "scala-java8-compat"  % Versions.scalaJava8Compat  % "provided",
-    "com.lightbend"            %% "service-locator-dns" % Versions.serviceLocatorDns,
     "ru.smslv.akka"            %% "akka-dns"            % Versions.akkaDns
   ),
   assemblyShadeRules in assembly ++= Seq(
     ShadeRule.rename("akka.io.AsyncDnsResolver**" -> "com.lightbend.rp.internal.@0").inAll,
-    ShadeRule.rename("com.lightbend.dns.locator.**" -> "com.lightbend.rp.internal.@0").inAll,
     ShadeRule.rename("ru.smslv**" -> "com.lightbend.rp.internal.@0").inAll
   )
 )
@@ -151,7 +154,7 @@ lazy val serviceDiscovery = createProject("reactive-lib-service-discovery", "ser
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka % "test",
     ),
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
-    assemblyInclude("akka-dns", "service-locator-dns"),
+    assemblyInclude("akka-dns"),
     assemblyExcludeLocal(Seq("common"))
   )
 
