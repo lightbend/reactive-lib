@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
+
+import scala.compat.java8.OptionConverters;
 import scala.runtime.AbstractFunction1;
 import scala.Option;
 import scala.collection.JavaConversions;
@@ -35,48 +37,97 @@ public final class ServiceLocator {
         Optional<Service> select(List<Service> addreses);
     }
 
-    public static AddressSelection addressSelectionFirst = addreses ->
+    public static final AddressSelection addressSelectionFirst = addreses ->
             addreses.isEmpty() ?
                     Optional.empty() :
                     Optional.of(addreses.get(0));
 
-    public static AddressSelection addressSelectionRandom = addreses ->
+    public static final AddressSelection addressSelectionRandom = addreses ->
         addreses.isEmpty() ?
             Optional.empty() :
             Optional.of(addreses.get(ThreadLocalRandom.current().nextInt(addreses.size())));
 
-    public static CompletionStage<Optional<Service>> lookup(String name, String endpoint, ActorSystem actorSystem) {
-        return lookup(name, endpoint, actorSystem, addressSelectionRandom);
-    }
-
-    public static CompletionStage<Optional<Service>> lookup(String name, String endpoint, ActorSystem actorSystem, AddressSelection addressSelection) {
+    public static CompletionStage<Optional<Service>> lookupOne(String namespace, String name, String endpoint, AddressSelection addressSelection, ActorSystem actorSystem) {
         return FutureConverters.toJava(
                 ServiceLocator$
                         .MODULE$
-                        .lookupOne(
-                                name,
-                                endpoint,
-                                new AbstractFunction1<Seq<Service>, Option<Service>>() {
-                                    @Override
-                                    public Option<Service> apply(Seq<Service> addresses) {
-                                        Optional<Service> lookup =
-                                                addressSelection.select(JavaConversions.seqAsJavaList(addresses));
+                        .lookupOne(namespace, name, endpoint, servicesToOptionService(addressSelection), actorSystem)
+        ).thenApply(OptionConverters::toJava);
+    }
 
-                                        return Option.apply(lookup.orElse(null));
-                                    }
-                                },
-                                actorSystem)
-                        .map(
-                                new AbstractFunction1<Option<Service>, Optional<Service>>() {
-                                    @Override
-                                    public Optional<Service> apply(Option<Service> value) {
-                                        return value.isDefined() ? Optional.of(value.get()) : Optional.empty();
-                                    }
-                                },
+    public static CompletionStage<Optional<Service>> lookupOne(String name, String endpoint, AddressSelection addressSelection, ActorSystem actorSystem) {
+        return FutureConverters.toJava(
+                ServiceLocator$
+                        .MODULE$
+                        .lookupOne(name, endpoint, servicesToOptionService(addressSelection), actorSystem)
+        ).thenApply(OptionConverters::toJava);
+    }
 
-                                actorSystem.dispatcher()
-                        )
-        );
+    public static CompletionStage<Optional<Service>> lookupOne(String name, AddressSelection addressSelection, ActorSystem actorSystem) {
+        return FutureConverters.toJava(
+                ServiceLocator$
+                        .MODULE$
+                        .lookupOne(name, servicesToOptionService(addressSelection), actorSystem)
+        ).thenApply(OptionConverters::toJava);
+    }
 
+    public static CompletionStage<Optional<Service>> lookupOne(String namespace, String name, String endpoint, ActorSystem actorSystem) {
+        return FutureConverters.toJava(
+                ServiceLocator$
+                        .MODULE$
+                        .lookupOne(namespace, name, endpoint, servicesToOptionService(addressSelectionRandom), actorSystem)
+        ).thenApply(OptionConverters::toJava);
+    }
+
+    public static CompletionStage<Optional<Service>> lookupOne(String name, String endpoint, ActorSystem actorSystem) {
+        return FutureConverters.toJava(
+                ServiceLocator$
+                        .MODULE$
+                        .lookupOne(name, endpoint, servicesToOptionService(addressSelectionRandom), actorSystem)
+        ).thenApply(OptionConverters::toJava);
+    }
+
+    public static CompletionStage<Optional<Service>> lookupOne(String name, ActorSystem actorSystem) {
+        return FutureConverters.toJava(
+                ServiceLocator$
+                        .MODULE$
+                        .lookupOne(name, servicesToOptionService(addressSelectionRandom), actorSystem)
+        ).thenApply(OptionConverters::toJava);
+    }
+
+    public static CompletionStage<List<Service>> lookup(String namespace, String name, String endpoint, ActorSystem actorSystem) {
+        return FutureConverters.toJava(
+                ServiceLocator$
+                        .MODULE$
+                        .lookup(namespace, name, endpoint, actorSystem)
+        ).thenApply(JavaConversions::seqAsJavaList);
+    }
+
+    public static CompletionStage<List<Service>> lookup(String name, String endpoint, ActorSystem actorSystem) {
+        return FutureConverters.toJava(
+                ServiceLocator$
+                        .MODULE$
+                        .lookup(name, endpoint, actorSystem)
+        ).thenApply(JavaConversions::seqAsJavaList);
+    }
+
+    public static CompletionStage<List<Service>> lookup(String name, ActorSystem actorSystem) {
+        return FutureConverters.toJava(
+                ServiceLocator$
+                        .MODULE$
+                        .lookup(name, actorSystem)
+
+        ).thenApply(JavaConversions::seqAsJavaList);
+    }
+
+    private static AbstractFunction1<Seq<Service>, Option<Service>> servicesToOptionService(AddressSelection addressSelection) {
+        return new AbstractFunction1<Seq<Service>, Option<Service>>() {
+            @Override
+            public Option<Service> apply(Seq<Service> addresses) {
+                Optional<Service> lookup =
+                        addressSelection.select(JavaConversions.seqAsJavaList(addresses));
+                return OptionConverters.toScala(lookup);
+            }
+        };
     }
 }

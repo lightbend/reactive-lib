@@ -16,11 +16,17 @@
 
 package com.lightbend.rp.servicediscovery.scaladsl
 
-import akka.actor.ActorSystem
-import akka.testkit.{ ImplicitSender, TestKit }
+import akka.actor.{ ActorRef, ActorSystem }
+import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
-import java.net.URI
-import org.scalatest.{ AsyncWordSpecLike, BeforeAndAfterAll, Matchers }
+import java.net.{ InetAddress, URI }
+
+import akka.io.{ AsyncDnsResolver, Dns }
+import com.lightbend.rp.common.{ Kubernetes, Platform }
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{ AsyncWordSpecLike, BeforeAndAfterAll, Inside, Matchers }
+import ru.smslv.akka.dns.raw.SRVRecord
+
 import scala.collection.immutable.Seq
 
 object ServiceLocatorSpec {
@@ -50,7 +56,11 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
   with ImplicitSender
   with AsyncWordSpecLike
   with Matchers
-  with BeforeAndAfterAll {
+  with BeforeAndAfterAll
+  with ScalaFutures
+  with Inside {
+
+  import ServiceLocatorLike.{ AddressSelectionFirst, AddressSelectionRandom }
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)
@@ -60,14 +70,14 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
   "AddressSelectionFirst" should {
     "work for empty sequences" in {
-      ServiceLocator.AddressSelectionFirst(Seq.empty) shouldBe None
+      AddressSelectionFirst(Seq.empty) shouldBe None
     }
 
     "work for non-empty sequences" in {
-      ServiceLocator.AddressSelectionFirst(
+      AddressSelectionFirst(
         Seq(Service("one", new URI("http://127.0.0.1:9000")))).contains(Service("one", new URI("http://127.0.0.1:9000"))) shouldBe true
 
-      ServiceLocator.AddressSelectionFirst(
+      AddressSelectionFirst(
         Seq(
           Service("one1", new URI("http://127.0.0.1:9000")),
           Service("one2", new URI("http://127.0.0.1:9001")))).contains(Service("one1", new URI("http://127.0.0.1:9000"))) shouldBe true
@@ -76,14 +86,14 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
   "AddressSelectionRandom" should {
     "work for empty sequences" in {
-      ServiceLocator.AddressSelectionRandom(Seq.empty) shouldBe None
+      AddressSelectionRandom(Seq.empty) shouldBe None
     }
 
     "work for non-empty sequences" in {
-      ServiceLocator.AddressSelectionRandom(
+      AddressSelectionRandom(
         Seq(Service("test", new URI("http://127.0.0.1:9000")))).contains(Service("test", new URI("http://127.0.0.1:9000"))) shouldBe true
 
-      ServiceLocator.AddressSelectionRandom(
+      AddressSelectionRandom(
         Seq(Service("test1", new URI("http://127.0.0.1:9000")), Service("test2", new URI("http://127.0.0.1:9001")))).nonEmpty shouldBe true
     }
   }
@@ -121,5 +131,69 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
         .lookupOne("test", "my-lookup", _.headOption)
         .map(_.contains(Service("has-two", new URI("http://127.0.0.1:8000"))) shouldBe true)
     }
+
+    "perform DNS SRV resolution during lookup" in {
+      val mockDnsResolver = TestProbe()
+      val serviceLocator = createServiceLocator(mockDnsResolver = Some(mockDnsResolver.ref))
+      val result = serviceLocator.lookup("chirper", "friendservice", "friendlookup")
+
+      mockDnsResolver.expectMsg(Dns.Resolve("_friendlookup._tcp.friendservice.chirper.svc.cluster.local"))
+      mockDnsResolver.reply(AsyncDnsResolver.SrvResolved("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", Seq(
+        SRVRecord("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
+
+      mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
+      mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
+
+      inside(result.futureValue) {
+        case Vector(s: Service) =>
+          s.hostname shouldBe "host1.domain"
+          s.uri.getScheme shouldBe "tcp"
+          s.uri.getUserInfo shouldBe null
+          s.uri.getHost shouldBe "10.0.12.5"
+          s.uri.getPort shouldBe 4568
+          s.uri.getPath shouldBe ""
+          s.uri.getQuery shouldBe null
+          s.uri.getFragment shouldBe null
+      }
+    }
   }
+
+  "ServiceLocator.translateName" should {
+    "translate name with namespace + name + endpoint" in {
+      val serviceLocator = createServiceLocator()
+      val result = serviceLocator.translateName(Some("chirper"), "friendservice", "api")
+      result shouldBe "_api._tcp.friendservice.chirper.svc.cluster.local"
+    }
+
+    "translate name with namespace from env + name + endpoint" in {
+      val serviceLocator = createServiceLocator(Map("RP_NAMESPACE" -> "cake"))
+      val result = serviceLocator.translateName(namespace = None, "friendservice", "api")
+      result shouldBe "_api._tcp.friendservice.cake.svc.cluster.local"
+    }
+
+    "translate name with default namespace + name + endpoint" in {
+      val serviceLocator = createServiceLocator()
+      val result = serviceLocator.translateName(namespace = None, "friendservice", "api")
+      result shouldBe "_api._tcp.friendservice.default.svc.cluster.local"
+    }
+
+    "not translate name containing DNS character" in {
+      val serviceLocator = createServiceLocator()
+      val result = serviceLocator.translateName(namespace = None, "_native._tcp.cassandra.default.svc.cluster.local", "")
+      result shouldBe "_native._tcp.cassandra.default.svc.cluster.local"
+
+    }
+  }
+
+  private def createServiceLocator(testEnv: Map[String, String] = Map.empty, mockDnsResolver: Option[ActorRef] = None): ServiceLocatorLike =
+    new ServiceLocatorLike {
+      def dnsResolver(implicit as: ActorSystem): ActorRef =
+        mockDnsResolver.getOrElse {
+          throw new IllegalArgumentException("Mock DNS resolver should not be required in this test!!!")
+        }
+
+      def env: Map[String, String] = testEnv
+      override def targetRuntime: Option[Platform] = Some(Kubernetes)
+    }
+
 }
