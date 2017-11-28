@@ -30,7 +30,7 @@ class LagomServiceLocator(circuitBreakersPanel: CircuitBreakersPanel)(implicit a
     for {
       http <- ServiceLocator.lookupOne(name, "lagom-http-api")
       result <- http match {
-        case None => ServiceLocator.lookupOne(name, "lagom-api")
+        case None => ServiceLocator.lookupOne(name)
         case Some(r) => Future.successful(Some(r))
       }
     } yield result.map(_.uri)
