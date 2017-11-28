@@ -2,19 +2,18 @@ import scala.collection.immutable.Seq
 import ReleaseTransformations._
 
 lazy val Versions = new {
-  val akka              = "2.4.12" // First version cross-compiled to 2.12
-  val akkaDns           = "2.4.2"
-  val dispatch          = "0.13.2"
-  val lagom13           = "1.3.0"
-  val lagom14           = "1.4.0-M2"
-  val play25            = "2.5.0"
-  val play26            = "2.6.0"
-  val scala211          = "2.11.11"
-  val scala212          = "2.12.3"
-  val scalaJava8Compat  = "0.8.0"
-  val scalaTest         = "3.0.1"
-  val sprayJson         = "1.3.3"
-  val typesafeConfig    = "1.3.1"
+  val akka                      = "2.4.12" // First version cross-compiled to 2.12
+  val akkaDns                   = "2.4.2"
+  val akkaManagementClusterHttp = "0.4+9-2f03f4eb"
+  val lagom13                   = "1.3.0"
+  val lagom14                   = "1.4.0-M2"
+  val play25                    = "2.5.0"
+  val play26                    = "2.6.0"
+  val scala211                  = "2.11.11"
+  val scala212                  = "2.12.3"
+  val scalaJava8Compat          = "0.8.0"
+  val scalaTest                 = "3.0.1"
+  val typesafeConfig            = "1.3.1"
 }
 
 def semanticVersioningMajor(version: String) =
@@ -147,10 +146,8 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
   .settings(serviceDiscoveryAssemblySettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka"       %% "akka-cluster"        % Versions.akka,
-      "com.typesafe.akka"       %% "akka-testkit"        % Versions.akka      % "test",
-      "net.databinder.dispatch" %% "dispatch-core"       % Versions.dispatch,
-      "io.spray"                %% "spray-json"          % Versions.sprayJson
+      "com.lightbend.akka"      %% "akka-management-cluster-http" % Versions.akkaManagementClusterHttp,
+      "com.typesafe.akka"       %% "akka-cluster"                 % Versions.akka
     ),
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )

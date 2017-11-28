@@ -16,26 +16,24 @@
 
 package com.lightbend.rp.akkaclusterbootstrap
 
-import java.util.UUID
-
 import akka.actor._
 import akka.cluster.Cluster
-import com.lightbend.rp.akkaclusterbootstrap.registrar.DispatchClient
+import akka.cluster.bootstrap.{ ClusterBootstrap => Bootstrap }
+import akka.cluster.http.management.ClusterHttpManagement
 
-final class ClusterBootstrapImpl(system: ExtendedActorSystem) extends Extension {
+final class ClusterBootstrap(system: ExtendedActorSystem) extends Extension {
   val cluster = Cluster(system)
-  val id = UUID.randomUUID()
 
   if (cluster.settings.SeedNodes.nonEmpty) {
     system.log.warning("ClusterBootstrap is enabled but seed nodes are defined, no action will be taken")
   } else {
-    system.log.info(s"Starting ClusterSupervisor: $id")
-
-    system.actorOf(ClusterSupervisor.props(id, new DispatchClient(system), Cluster(system)))
+    ClusterHttpManagement(cluster).start()
+    Bootstrap(system).start()
   }
 }
 
-object ClusterBootstrap extends ExtensionId[ClusterBootstrapImpl] with ExtensionIdProvider {
+object ClusterBootstrap extends ExtensionId[ClusterBootstrap] with ExtensionIdProvider {
   override def lookup: ClusterBootstrap.type = ClusterBootstrap
-  override def createExtension(system: ExtendedActorSystem): ClusterBootstrapImpl = new ClusterBootstrapImpl(system)
+  override def get(system: ActorSystem): ClusterBootstrap = super.get(system)
+  override def createExtension(system: ExtendedActorSystem): ClusterBootstrap = new ClusterBootstrap(system)
 }
