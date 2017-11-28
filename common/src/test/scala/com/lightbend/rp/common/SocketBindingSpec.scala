@@ -35,7 +35,8 @@ class SocketBindingSpec extends WordSpec with Matchers {
       "RP_ENDPOINT_EP2_HOST" -> "192.168.11.5",
       "RP_ENDPOINT_EP2_HOST" -> "192.168.11.10",
       "RP_ENDPOINT_EP2_BIND_HOST" -> "0.0.0.0",
-      "RP_ENDPOINT_EP2_PROTOCOL" -> "udp"))
+      "RP_ENDPOINT_EP2_PROTOCOL" -> "udp",
+      "RP_ENDPOINT_AKKA_REMOTE_HOST" -> "0.0.0.0"))
 
   "bindHost" should {
     "fallback to host when missing" in {
@@ -59,6 +60,14 @@ class SocketBindingSpec extends WordSpec with Matchers {
       reader.host("ep0", "localhost") shouldBe "192.168.1.5"
       reader.host("ep1", "localhost") shouldBe "192.168.1.10"
       reader.host("ep1", "localhost") shouldBe "192.168.1.10"
+    }
+
+    "work for service name version" in {
+      reader.host("akka-remote", "localhost") shouldBe "0.0.0.0"
+    }
+
+    "work for env name version" in {
+      reader.host("akka_remote", "localhost") shouldBe "0.0.0.0"
     }
 
     "fallback to default when both missing" in {

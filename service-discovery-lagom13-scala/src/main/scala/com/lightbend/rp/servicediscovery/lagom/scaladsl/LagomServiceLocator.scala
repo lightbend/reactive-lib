@@ -18,19 +18,21 @@ package com.lightbend.rp.servicediscovery.lagom.scaladsl
 
 import akka.actor.ActorSystem
 import com.lightbend.lagom.internal.client.CircuitBreakers
+import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator
 import com.lightbend.lagom.scaladsl.api.Descriptor
 import com.lightbend.lagom.scaladsl.client.CircuitBreakingServiceLocator
 import java.net.{ URI => JavaURI }
-
-import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator
-
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.language.reflectiveCalls
 
 class LagomServiceLocator(circuitBreakers: CircuitBreakers)(implicit as: ActorSystem, ec: ExecutionContext) extends CircuitBreakingServiceLocator(circuitBreakers)(ec) {
 
   override def locate(name: String, serviceCall: Descriptor.Call[_, _]): Future[Option[JavaURI]] =
-    ServiceLocator
-      .lookupOne(name, "lagom-api")
-      .map(_.map(_.uri))
+    for {
+      http <- ServiceLocator.lookupOne(name = name, endpoint = "lagom-http-api")
+      result <- http match {
+        case None => ServiceLocator.lookupOne(name = name)
+        case Some(r) => Future.successful(Some(r))
+      }
+    } yield result.map(_.uri)
 }

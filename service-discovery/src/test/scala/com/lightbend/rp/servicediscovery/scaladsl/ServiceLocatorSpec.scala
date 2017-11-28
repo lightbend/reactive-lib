@@ -125,9 +125,6 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
     "recursively resolve name & endpoint" in {
       ServiceLocator
-        .lookupOne("test", "my-lookup", _.headOption).foreach(println)
-
-      ServiceLocator
         .lookupOne("test", "my-lookup", _.headOption)
         .map(_.contains(Service("has-two", new URI("http://127.0.0.1:8000"))) shouldBe true)
     }

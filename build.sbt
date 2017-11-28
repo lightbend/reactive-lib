@@ -17,41 +17,6 @@ lazy val Versions = new {
   val typesafeConfig    = "1.3.1"
 }
 
-/**
- * This method excludes any files with a subdirectory sequence of `names` in the path. This
- * is used to ensure that local project files from dependencies don't end up in the assembled
- * jar. For instance, you call this with "common" to ensure no "com/lightbend/rp/common"
- * directories end up in your jar.
- */
-def assemblyExcludeLocal(names: Seq[String]*) =
-  assemblyOption in assembly := {
-    val options = (assemblyOption in assembly).value
-
-    options.copy(
-      excludedFiles = { files =>
-        options.excludedFiles(files) ++ files
-          .filter(_.isDirectory)
-          .map(dir => (dir, (dir ** "*").get))
-          .flatMap { case (dir, files) =>
-            names.flatMap { names =>
-              val path = (Seq("com", "lightbend", "rp") ++ names).mkString(s"${Path.sep}")
-
-              if (files.exists(_.getAbsolutePath.contains(path)))
-                dir +: files
-              else
-                Seq.empty
-            }
-          }
-      }
-    )
-  }
-
-def assemblyInclude(names: String*) =
-  assemblyExcludedJars in assembly :=
-    (fullClasspath in assembly)
-      .value
-      .filterNot(f => names.nonEmpty && names.exists(f.data.getName.startsWith))
-
 def semanticVersioningMajor(version: String) =
   version
     .reverse
@@ -60,7 +25,7 @@ def semanticVersioningMajor(version: String) =
     .reverse
 
 def createProject(id: String, path: String) = Project(id, file(path))
-  .enablePlugins(AutomateHeaderPlugin, AssemblyPlugin)
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := id,
     resolvers += Resolver.bintrayRepo("hajile", "maven"),
@@ -100,16 +65,7 @@ def createProject(id: String, path: String) = Project(id, file(path))
       setNextVersion,
       commitNextVersion,
       pushChanges
-    ),
-
-    addArtifact(artifact in (Compile, assembly), assembly),
-
-    assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
-
-    assemblyJarName in assembly :=
-      s"${name.value}_${semanticVersioningMajor(scalaVersion.value)}-${version.value}.jar",
-
-    packageBin in Compile := (assembly in Compile).value
+    )
   )
 
 lazy val root = createProject("reactive-lib", ".")
@@ -135,14 +91,8 @@ lazy val common = createProject("reactive-lib-common", "common")
 
 lazy val serviceDiscoveryAssemblySettings = Vector(
   libraryDependencies ++= Seq(
-    "com.typesafe.akka"        %% "akka-actor"          % Versions.akka              % "provided",
-    "com.typesafe"              % "config"              % Versions.typesafeConfig    % "provided",
-    "org.scala-lang.modules"   %% "scala-java8-compat"  % Versions.scalaJava8Compat  % "provided",
+    "com.typesafe.akka"        %% "akka-actor"          % Versions.akka,
     "ru.smslv.akka"            %% "akka-dns"            % Versions.akkaDns
-  ),
-  assemblyShadeRules in assembly ++= Seq(
-    ShadeRule.rename("akka.io.AsyncDnsResolver**" -> "com.lightbend.rp.internal.@0").inAll,
-    ShadeRule.rename("ru.smslv**" -> "com.lightbend.rp.internal.@0").inAll
   )
 )
 
@@ -153,10 +103,7 @@ lazy val serviceDiscovery = createProject("reactive-lib-service-discovery", "ser
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka % "test",
     ),
-    crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
-    assemblyInclude("akka-dns"),
-    assemblyExcludeLocal(Seq("common"))
-  )
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212))
 
 lazy val serviceDiscoveryLagom13Java = createProject("reactive-lib-service-discovery-lagom13-java", "service-discovery-lagom13-java")
   .dependsOn(serviceDiscovery)
@@ -165,22 +112,16 @@ lazy val serviceDiscoveryLagom13Java = createProject("reactive-lib-service-disco
     autoScalaLibrary := false,
     crossPaths := false,
     libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom13 % "provided"
-    ),
-    assemblyInclude(),
-    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
-  )
+      "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom13
+    ))
 
 lazy val serviceDiscoveryLagom13Scala = createProject("reactive-lib-service-discovery-lagom13-scala", "service-discovery-lagom13-scala")
   .dependsOn(serviceDiscovery)
   .settings(serviceDiscoveryAssemblySettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-scaladsl-client"   % Versions.lagom13 % "provided"
-    ),
-    assemblyInclude(),
-    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
-  )
+      "com.lightbend.lagom" %% "lagom-scaladsl-client"   % Versions.lagom13
+    ))
 
 lazy val serviceDiscoveryLagom14Java = createProject("reactive-lib-service-discovery-lagom14-java", "service-discovery-lagom14-java")
   .dependsOn(serviceDiscovery)
@@ -189,21 +130,16 @@ lazy val serviceDiscoveryLagom14Java = createProject("reactive-lib-service-disco
     autoScalaLibrary := false,
     crossPaths := false,
     libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom14 % "provided"
-    ),
-    assemblyInclude(),
-    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
-  )
+      "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom14
+    ))
 
 lazy val serviceDiscoveryLagom14Scala = createProject("reactive-lib-service-discovery-lagom14-scala", "service-discovery-lagom14-scala")
   .dependsOn(serviceDiscovery)
   .settings(serviceDiscoveryAssemblySettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom14 % "provided",
-    ),
-    assemblyInclude(),
-    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
+      "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom14,
+    )
   )
 
 lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstrap", "akka-cluster-bootstrap")
@@ -211,59 +147,22 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
   .settings(serviceDiscoveryAssemblySettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka"       %% "akka-cluster"        % Versions.akka      % "provided",
+      "com.typesafe.akka"       %% "akka-cluster"        % Versions.akka,
       "com.typesafe.akka"       %% "akka-testkit"        % Versions.akka      % "test",
       "net.databinder.dispatch" %% "dispatch-core"       % Versions.dispatch,
       "io.spray"                %% "spray-json"          % Versions.sprayJson
     ),
-    crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
-    assemblyShadeRules in assembly ++= Seq(
-      ShadeRule.rename("com.typesafe.netty.**" -> "com.lightbend.rp.internal.@0").inAll,
-      ShadeRule.rename("dispatch.**" -> "com.lightbend.rp.internal.@0").inAll,
-      ShadeRule.rename("io.netty.**" -> "com.lightbend.rp.internal.@0").inAll,
-      ShadeRule.rename("org.asynchttpclient**" -> "com.lightbend.rp.internal.@0").inAll,
-      ShadeRule.rename("org.reactivestreams**" -> "com.lightbend.rp.internal.@0").inAll,
-      ShadeRule.rename("org.slf4j**" -> "com.lightbend.rp.internal.@0").inAll,
-      ShadeRule.rename("spray.**" -> "com.lightbend.rp.internal.@0").inAll
-    ),
-    assemblyMergeStrategy in assembly := {
-      case PathList(ps @ _*) if ps.last == "io.netty.versions.properties" =>
-        MergeStrategy.first
-      case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
-        oldStrategy(x)
-    },
-    assemblyExcludeLocal(Seq("common"), Seq("servicediscovery")),
-    assemblyInclude(
-      "async-http-client",
-      "async-http-client-netty-utils",
-      "dispatch-core",
-      "netty-buffer",
-      "netty-codec",
-      "netty-codec-dns",
-      "netty-codec-http",
-      "netty-common",
-      "netty-handler",
-      "netty-reactive-streams",
-      "netty-resolver",
-      "netty-resolver-dns",
-      "netty-transport",
-      "netty-transport-native-epoll",
-      "reactive-streams",
-      "slf4j-api",
-      "spray-json")
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
 lazy val playHttpBinding = createProject("reactive-lib-play-http-binding", "play-http-binding")
   .dependsOn(common)
   .settings(
-    crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
-    assemblyExcludeLocal(Seq("common"))
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
 lazy val secrets = createProject("reactive-lib-secrets", "secrets")
   .dependsOn(common)
   .settings(
-    crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
-    assemblyExcludeLocal(Seq("common"))
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
