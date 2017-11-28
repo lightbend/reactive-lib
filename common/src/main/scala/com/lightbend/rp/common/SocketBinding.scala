@@ -21,7 +21,7 @@ import scala.collection.JavaConverters._
 
 object SocketBinding {
   private val ValidEndpointChars =
-    (('0' to '9') ++ ('A' to 'Z') ++ Seq('_', '-')).toSet
+    (('0' to '9') ++ ('A' to 'Z') ++ Seq('_')).toSet
 
   private val ProcotolMapping: Map[String, SocketProtocol] = Map(
     "http" -> HttpSocketProtocol,
