@@ -11,8 +11,5 @@ before_cache:
   - rm -rf $HOME/.ivy2/cache/com/lightbend/rp/sbtreactiveapp
   # Delete all ivydata files since ivy touches them on each build
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" | xargs rm
-before_install:
-  # FIXME remove once release with akka joining is out
-  - bash publish-akka-management.sh
 script:
   - sbt +test
