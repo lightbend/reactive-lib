@@ -27,10 +27,8 @@ final class ClusterBootstrap(system: ExtendedActorSystem) extends Extension {
 
   if (cluster.settings.SeedNodes.nonEmpty) {
     system.log.warning("ClusterBootstrap is enabled but seed nodes are defined, no action will be taken")
-  } else if (Platform.active == None) {
-    // When running locally, for example with "sbt runAll", actors join local cluster.
-    cluster.join(cluster.selfAddress)
-    system.log.info("Not starting cluster bootstrap because app is running locally")
+  } else if (Platform.active.isEmpty) {
+    system.log.info("ClusterBootstrap is enabled but no active platform detected (i.e. running locally), no action will be taken")
   } else {
     ClusterHttpManagement(cluster).start()
     Bootstrap(system).start()
