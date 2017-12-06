@@ -20,12 +20,15 @@ import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.bootstrap.{ ClusterBootstrap => Bootstrap }
 import akka.cluster.http.management.ClusterHttpManagement
+import com.lightbend.rp.common.Platform
 
 final class ClusterBootstrap(system: ExtendedActorSystem) extends Extension {
   val cluster = Cluster(system)
 
   if (cluster.settings.SeedNodes.nonEmpty) {
     system.log.warning("ClusterBootstrap is enabled but seed nodes are defined, no action will be taken")
+  } else if (Platform.active.isEmpty) {
+    system.log.info("ClusterBootstrap is enabled but no active platform detected (i.e. running locally), no action will be taken")
   } else {
     ClusterHttpManagement(cluster).start()
     Bootstrap(system).start()
