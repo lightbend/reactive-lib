@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.lightbend.rp.common
+package com.lightbend.rp.akkaclusterbootstrap.kubernetes
 
-sealed trait Platform
+import scala.collection.immutable.Seq
 
-case object Kubernetes extends Platform
-
-object Platform {
-  lazy val active: Option[Platform] = decode(sys.env.get("RP_PLATFORM"))
-
-  private[rp] def decode(platform: Option[String]) = platform match {
-    case Some("kubernetes") => Some(Kubernetes)
-    case _ => None
-  }
+object PodList {
+  case class Port(name: String, containerPort: Int)
+  case class Container(name: String, ports: Seq[Port])
+  case class Spec(containers: Seq[Container])
+  case class Status(podIP: String)
+  case class Item(spec: Spec, status: Status)
 }
+
+import PodList._
+
+case class PodList(items: Seq[Item])

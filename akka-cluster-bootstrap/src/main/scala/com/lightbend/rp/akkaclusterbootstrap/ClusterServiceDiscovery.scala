@@ -28,7 +28,7 @@ class ClusterServiceDiscovery(system: ActorSystem) extends ServiceDiscovery {
 
   def lookup(name: String, resolveTimeout: FiniteDuration): Future[Resolved] = {
     ServiceLocator
-      .lookup(name, "akka-mgmt-http")(system)
+      .lookup(name, AkkaManagementPortName)(system)
       .map(services =>
         Resolved(
           name,

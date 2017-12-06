@@ -14,17 +14,9 @@
  * limitations under the License.
  */
 
-package com.lightbend.rp.common
+package com.lightbend.rp.akkaclusterbootstrap
 
-sealed trait Platform
-
-case object Kubernetes extends Platform
-
-object Platform {
-  lazy val active: Option[Platform] = decode(sys.env.get("RP_PLATFORM"))
-
-  private[rp] def decode(platform: Option[String]) = platform match {
-    case Some("kubernetes") => Some(Kubernetes)
-    case _ => None
-  }
+package object kubernetes {
+  val KubernetesCAPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+  val KubernetesToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 }
