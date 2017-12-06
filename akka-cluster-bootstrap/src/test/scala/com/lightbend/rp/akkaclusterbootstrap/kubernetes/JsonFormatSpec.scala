@@ -37,7 +37,7 @@ class JsonFormatSpec extends WordSpec with Matchers {
                   Container(
                     "akka-cluster-tooling-example",
                     List(Port("akka-remote", 10000), Port("akka-mgmt-http", 10001), Port("http", 10002))))),
-              Status("172.17.0.4")),
+              Status(Some("172.17.0.4"))),
 
             Item(
               Spec(
@@ -45,7 +45,7 @@ class JsonFormatSpec extends WordSpec with Matchers {
                   Container(
                     "akka-cluster-tooling-example",
                     List(Port("akka-remote", 10000), Port("akka-mgmt-http", 10001), Port("http", 10002))))),
-              Status("172.17.0.6")),
+              Status(Some("172.17.0.6"))),
 
             Item(
               Spec(
@@ -53,7 +53,7 @@ class JsonFormatSpec extends WordSpec with Matchers {
                   Container(
                     "akka-cluster-tooling-example",
                     List(Port("akka-remote", 10000), Port("akka-mgmt-http", 10001), Port("http", 10002))))),
-              Status("172.17.0.7"))))
+              Status(Some("172.17.0.7")))))
     }
   }
 

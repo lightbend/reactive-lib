@@ -22,7 +22,7 @@ object PodList {
   case class Port(name: String, containerPort: Int)
   case class Container(name: String, ports: Seq[Port])
   case class Spec(containers: Seq[Container])
-  case class Status(podIP: String)
+  case class Status(podIP: Option[String])
   case class Item(spec: Spec, status: Status)
 }
 

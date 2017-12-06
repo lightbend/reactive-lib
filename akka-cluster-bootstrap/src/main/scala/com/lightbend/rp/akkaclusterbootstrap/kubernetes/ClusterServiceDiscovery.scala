@@ -43,7 +43,8 @@ object ClusterServiceDiscovery {
       item <- podList.items
       container <- item.spec.containers.find(_.name == name)
       port <- container.ports.find(_.name == AkkaManagementPortName)
-    } yield ResolvedTarget(item.status.podIP, Some(port.containerPort))
+      ip <- item.status.podIP
+    } yield ResolvedTarget(ip, Some(port.containerPort))
 }
 
 /**

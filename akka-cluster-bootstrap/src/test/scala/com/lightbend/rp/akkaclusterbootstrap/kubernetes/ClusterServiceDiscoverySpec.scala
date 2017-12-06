@@ -31,7 +31,15 @@ class ClusterServiceDiscoverySpec extends WordSpec with Matchers {
                 Container(
                   "akka-cluster-tooling-example",
                   List(Port("akka-remote", 10000), Port("akka-mgmt-http", 10001), Port("http", 10002))))),
-            Status("172.17.0.4")),
+            Status(Some("172.17.0.4"))),
+
+          Item(
+            Spec(
+              List(
+                Container(
+                  "akka-cluster-tooling-example",
+                  List(Port("akka-remote", 10000), Port("akka-mgmt-http", 10001), Port("http", 10002))))),
+            Status(None)),
 
           Item(
             Spec(
@@ -39,7 +47,7 @@ class ClusterServiceDiscoverySpec extends WordSpec with Matchers {
                 Container(
                   "akka-cluster-tooling-other-example",
                   List(Port("akka-remote", 10000), Port("akka-mgmt-http", 10001), Port("http", 10002))))),
-            Status("172.17.0.6")),
+            Status(Some("172.17.0.6"))),
 
           Item(
             Spec(
@@ -47,7 +55,7 @@ class ClusterServiceDiscoverySpec extends WordSpec with Matchers {
                 Container(
                   "akka-cluster-tooling-another-example",
                   List(Port("akka-remote", 10000), Port("akka-mgmt-http", 10001), Port("http", 10002))))),
-            Status("172.17.0.7"))))
+            Status(Some("172.17.0.7")))))
 
       ClusterServiceDiscovery.targets(podList, "akka-cluster-tooling-example") shouldBe List(
         ResolvedTarget("172.17.0.4", Some(10001)))
