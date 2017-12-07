@@ -95,7 +95,7 @@ trait ServiceLocatorLike {
         if (name.exists(DnsCharacters.contains) && endpoint.isEmpty) {
           name
         } else {
-          val serviceNamespace = namespace.orElse(namespaceFromEnv()).getOrElse("default")
+          val serviceNamespace = namespace.orElse(namespaceFromEnv()).getOrElse(kubernetes.DefaultNamespace)
           val serviceName = endpointServiceName(name)
           val endpointName = endpointServiceName(endpoint)
 
