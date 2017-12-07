@@ -16,15 +16,21 @@
 
 package com.lightbend.rp.secrets.javadsl;
 
+import akka.actor.ActorSystem;
+import akka.stream.ActorMaterializer;
+import akka.util.ByteString;
 import com.lightbend.rp.secrets.scaladsl.SecretReader$;
-import scala.Option;
-
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import scala.compat.java8.FutureConverters;
+import scala.compat.java8.OptionConverters;
 
 public class SecretReader {
-    public static Optional<String> get(String namespace, String name) {
-        Option<String> secret = SecretReader$.MODULE$.apply(namespace, name);
-
-        return secret.isDefined() ? Optional.of(secret.get()) : Optional.empty();
+    public static CompletionStage<Optional<ByteString>> get(String name, String key, ActorSystem actorSystem, ActorMaterializer mat) {
+        return FutureConverters.toJava(
+                SecretReader$
+                        .MODULE$
+                        .get(name, key, actorSystem, mat)
+        ).thenApply(OptionConverters::toJava);
     }
 }

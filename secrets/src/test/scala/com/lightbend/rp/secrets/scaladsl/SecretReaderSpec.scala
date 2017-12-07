@@ -25,4 +25,10 @@ class SecretReaderSpec extends WordSpec with Matchers {
       SecretReader.envName("test3!!", "hello  there") shouldBe "RP_SECRETS_TEST3___HELLO__THERE"
     }
   }
+
+  "filePath" should {
+    "work" in {
+      SecretReader.filePath("my-secret", "my-key").toString shouldBe "/rp/secrets/my-secret/my-key"
+    }
+  }
 }
