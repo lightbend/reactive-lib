@@ -225,5 +225,9 @@ lazy val playHttpBinding = createProject("reactive-lib-play-http-binding", "play
 lazy val secrets = createProject("reactive-lib-secrets", "secrets")
   .dependsOn(common)
   .settings(
-    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-actor"  % Versions.akka % "provided",
+      "com.typesafe.akka" %% "akka-stream" % Versions.akka % "provided"
+    )
   )

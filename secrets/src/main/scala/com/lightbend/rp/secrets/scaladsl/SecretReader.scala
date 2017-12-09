@@ -16,12 +16,40 @@
 
 package com.lightbend.rp.secrets.scaladsl
 
+import java.nio.charset.StandardCharsets
+
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.FileIO
+import akka.util.ByteString
+import java.nio.file.{ Path, Paths }
+
+import scala.concurrent._
+
 object SecretReader {
-  def apply(namespace: String, name: String): Option[String] =
-    Option(System.getenv(envName(namespace, name)))
+  def get(name: String, key: String)(implicit as: ActorSystem, mat: ActorMaterializer): Future[Option[ByteString]] = {
+    import as.dispatcher
+
+    sys
+      .env
+      .get(envName(name, key))
+      .map(data => Future.successful(Some(ByteString(data))))
+      .getOrElse(
+        FileIO.fromPath(filePath(name, key))
+          .runFold(ByteString.empty)(_ ++ _)
+          .map(Some(_))
+          .recover { case _: Throwable => None })
+  }
 
   private[secrets] def envName(namespace: String, name: String): String =
     s"RP_SECRETS_${namespace}_$name"
       .toUpperCase
       .map(c => if (c.isLetterOrDigit) c else '_')
+
+  private[scaladsl] def filePath(name: String, key: String): Path =
+    Paths
+      .get("/rp")
+      .resolve("secrets")
+      .resolve(name)
+      .resolve(key)
 }
