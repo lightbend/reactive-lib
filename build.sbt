@@ -126,7 +126,7 @@ lazy val common = createProject("reactive-lib-common", "common")
 lazy val serviceDiscoveryAssemblySettings = Vector(
   libraryDependencies ++= Seq(
     "com.typesafe.akka"        %% "akka-actor"          % Versions.akka              % "provided",
-    "ru.smslv.akka"            %% "akka-dns"            % Versions.akkaDns
+    "ru.smslv.akka"            %% "akka-dns"            % Versions.akkaDns           % "provided"
   ),
   assemblyShadeRules in assembly ++= Seq(
     ShadeRule.rename("akka.io.AsyncDnsResolver**" -> "com.lightbend.rp.internal.@0").inAll,
@@ -211,7 +211,8 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
   .settings(
     libraryDependencies ++= Seq(
       "com.lightbend.akka"      %% "akka-management-cluster-http" % Versions.akkaManagementClusterHttp,
-      "com.typesafe.akka"       %% "akka-cluster"                 % Versions.akka % "provided"
+      "com.typesafe.akka"       %% "akka-cluster"                 % Versions.akka     % "provided",
+      "ru.smslv.akka"           %% "akka-dns"                     % Versions.akkaDns  % "provided"
     ),
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
