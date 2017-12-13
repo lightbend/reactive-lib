@@ -1,4 +1,7 @@
+import scala.collection.{ Seq => DefaultSeq }
 import scala.collection.immutable.Seq
+import scala.xml.{ Node => XmlNode, NodeSeq => XmlNodeSeq, _ }
+import scala.xml.transform.{ RewriteRule, RuleTransformer }
 import ReleaseTransformations._
 
 lazy val Versions = new {
@@ -15,6 +18,8 @@ lazy val Versions = new {
   val scalaTest                 = "3.0.1"
   val typesafeConfig            = "1.3.1"
 }
+
+lazy val pomExclude = SettingKey[DefaultSeq[(String, String, String)]]("pom-exclude")
 
 /**
  * This method excludes any files with a subdirectory sequence of `names` in the path. This
@@ -99,7 +104,29 @@ def createProject(id: String, path: String) = Project(id, file(path))
       setNextVersion,
       commitNextVersion,
       pushChanges
-    )
+    ),
+    pomExclude := Vector.empty,
+    pomPostProcess := { (node: XmlNode) =>
+      new RuleTransformer(
+        new RewriteRule {
+          val excluded = pomExclude.value
+
+          override def transform(node: XmlNode): XmlNodeSeq = node match {
+            case e: Elem if e.label == "dependency" =>
+              val organization = e.child.filter(_.label == "groupId").flatMap(_.text).mkString
+              val artifact = e.child.filter(_.label == "artifactId").flatMap(_.text).mkString
+              val version = e.child.filter(_.label == "version").flatMap(_.text).mkString
+
+              if (excluded.contains((organization, artifact, version)))
+                Comment(s"provided dependency $organization#$artifact;$version has been omitted")
+              else
+                node
+            case _ => node
+          }
+        })
+        .transform(node)
+        .head
+    }
   )
 
 lazy val root = createProject("reactive-lib", ".")
@@ -126,12 +153,14 @@ lazy val common = createProject("reactive-lib-common", "common")
 lazy val serviceDiscoveryAssemblySettings = Vector(
   libraryDependencies ++= Seq(
     "com.typesafe.akka"        %% "akka-actor"          % Versions.akka              % "provided",
-    "ru.smslv.akka"            %% "akka-dns"            % Versions.akkaDns           % "provided"
+    "ru.smslv.akka"            %% "akka-dns"            % Versions.akkaDns
   ),
   assemblyShadeRules in assembly ++= Seq(
     ShadeRule.rename("akka.io.AsyncDnsResolver**" -> "com.lightbend.rp.internal.@0").inAll,
     ShadeRule.rename("ru.smslv**" -> "com.lightbend.rp.internal.@0").inAll
   ),
+
+  pomExclude += ("ru.smslv.akka", s"akka-dns_${semanticVersioningMajor(scalaVersion.value)}", Versions.akkaDns),
 
   addArtifact(artifact in (Compile, assembly), assembly),
 
@@ -212,9 +241,10 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
     libraryDependencies ++= Seq(
       "com.lightbend.akka"      %% "akka-management-cluster-http" % Versions.akkaManagementClusterHttp,
       "com.typesafe.akka"       %% "akka-cluster"                 % Versions.akka     % "provided",
-      "ru.smslv.akka"           %% "akka-dns"                     % Versions.akkaDns  % "provided"
+      "ru.smslv.akka"           %% "akka-dns"                     % Versions.akkaDns
     ),
-    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
+    pomExclude += ("ru.smslv.akka", s"akka-dns_${semanticVersioningMajor(scalaVersion.value)}", Versions.akkaDns)
   )
 
 lazy val playHttpBinding = createProject("reactive-lib-play-http-binding", "play-http-binding")
