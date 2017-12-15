@@ -19,6 +19,10 @@ lazy val Versions = new {
   val typesafeConfig            = "1.3.1"
 }
 
+lazy val scalaVersionMajor = SettingKey[String]("scala-version-major")
+
+scalaVersionMajor in ThisBuild := (scalaVersion.value).split('.').dropRight(1).mkString(".")
+
 //lazy val pomExclude = SettingKey[DefaultSeq[(String, String, String)]]("pom-exclude")
 
 /**
@@ -67,6 +71,7 @@ def semanticVersioningMajor(version: String) =
 
 def createProject(id: String, path: String) = Project(id, file(path))
   .enablePlugins(AutomateHeaderPlugin)
+  .disablePlugins(sbtassembly.AssemblyPlugin)
   .settings(
     name := id,
     resolvers += Resolver.bintrayRepo("hajile", "maven"),
@@ -151,24 +156,21 @@ lazy val root = createProject("reactive-lib", ".")
     serviceDiscoveryLagom14Scala
   )
 
-lazy val shaded = Project(id = "shaded", base = file("shaded"))
-  .aggregate(shadedAkkaDns)
-  .disablePlugins(sbtassembly.AssemblyPlugin)
-
-lazy val shadedAkkaDns = Project(id = "shaded-akka-dns", base = file("shaded/akka-dns"))
+lazy val shadedAkkaDns = Project(id = "shaded-akka-dns", base = file("shaded-akka-dns"))
   .settings(
+    organization := "com.lightbend.rp",
+    organizationName := "Lightbend, Inc.",
+    scalaVersion := Versions.scala211,
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
     test in assembly := {},
     assemblyOption in assembly ~= {
       _.copy(includeScala = false)
     },
     assemblyJarName in assembly := {
-      val scalaVersionMajor = (scalaVersion.value).split('.').dropRight(1).mkString("_")
-      s"${name.value}-$scalaVersionMajor-${version.value}-assembly.jar"
+      s"${name.value}-${scalaVersionMajor.value}-${version.value}.jar"
     },
     target in assembly := {
-      val scalaVersionMajor = (scalaVersion.value).split('.').dropRight(1).mkString("_")
-      baseDirectory.value.getParentFile / "target" / scalaVersionMajor
+      baseDirectory.value / "target" / scalaVersionMajor.value
     },
     addArtifact(Artifact("shaded-akka-dns", "assembly"), sbtassembly.AssemblyKeys.assembly),
     assemblyShadeRules in assembly := Seq(
@@ -176,10 +178,33 @@ lazy val shadedAkkaDns = Project(id = "shaded-akka-dns", base = file("shaded/akk
       ShadeRule.rename("ru.smslv**" -> "com.lightbend.rp.internal.@0").inAll
     ),
     libraryDependencies ++= Seq(
+      "com.typesafe.akka"        %% "akka-actor"          % Versions.akka              % "provided",
       "ru.smslv.akka"            %% "akka-dns"            % Versions.akkaDns
     ),
     assemblyExcludedJars in assembly := {
       (fullClasspath in assembly).value.filterNot(_.data.getName.startsWith("akka-dns"))
+    },
+    pomPostProcess := { (node: XmlNode) =>
+      new RuleTransformer(
+        new RewriteRule {
+          override def transform(node: XmlNode): XmlNodeSeq = node match {
+            case e: Elem if e.label == "dependency" =>
+              val organization = get(e, "groupId")
+              val artifact = get(e, "artifactId")
+              val version = e.child.filter(_.label == "version").flatMap(_.text).mkString
+
+              if (organization == "ru.smslv.akka" && artifact.startsWith("akka-dns"))
+                Comment(s"provided dependency $organization#$artifact;$version has been omitted")
+              else
+                node
+            case _ => node
+          }
+
+          private def get(current: Elem, childElementName: String): String =
+            current.child.filter(_.label == childElementName).flatMap(_.text).mkString
+        })
+        .transform(node)
+        .head
     }
   )
 
@@ -219,17 +244,13 @@ lazy val temporaryDependenciesSettings = Vector(
   ))
 
 lazy val serviceDiscovery = createProject("reactive-lib-service-discovery", "service-discovery")
-  //.enablePlugins(AssemblyPlugin)
-  .dependsOn(common)
-  //.settings(serviceDiscoveryAssemblySettings: _*)
-  .settings(temporaryDependenciesSettings: _*)
+  .dependsOn(common, shadedAkkaDns)
   .settings(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-testkit" % Versions.akka % "test",
+      "com.typesafe.akka"        %% "akka-actor"          % Versions.akka    % "provided",
+      "com.typesafe.akka"        %% "akka-testkit"        % Versions.akka    % "test",
     ),
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
-    //assemblyInclude("akka-dns"),
-    //assemblyExcludeLocal(Seq("common"))
   )
 
 lazy val serviceDiscoveryLagom13Java = createProject("reactive-lib-service-discovery-lagom13-java", "service-discovery-lagom13-java")
