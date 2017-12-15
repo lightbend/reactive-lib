@@ -245,8 +245,11 @@ lazy val temporaryDependenciesSettings = Vector(
   ))
 
 lazy val serviceDiscovery = createProject("reactive-lib-service-discovery", "service-discovery")
-  .dependsOn(common, shadedAkkaDns)
+  .dependsOn(common)
   .settings(
+    unmanagedJars in Compile ++= Seq(
+      (assembly in Compile in shadedAkkaDns).value
+    ),
     libraryDependencies ++= Seq(
       "com.typesafe.akka"        %% "akka-actor"          % Versions.akka    % "provided",
       "com.typesafe.akka"        %% "akka-testkit"        % Versions.akka    % "test",
