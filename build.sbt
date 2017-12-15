@@ -151,6 +151,38 @@ lazy val root = createProject("reactive-lib", ".")
     serviceDiscoveryLagom14Scala
   )
 
+lazy val shaded = Project(id = "shaded", base = file("shaded"))
+  .aggregate(shadedAkkaDns)
+  .disablePlugins(sbtassembly.AssemblyPlugin)
+
+lazy val shadedAkkaDns = Project(id = "shaded-akka-dns", base = file("shaded/akka-dns"))
+  .settings(
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
+    test in assembly := {},
+    assemblyOption in assembly ~= {
+      _.copy(includeScala = false)
+    },
+    assemblyJarName in assembly := {
+      val scalaVersionMajor = (scalaVersion.value).split('.').dropRight(1).mkString("_")
+      s"${name.value}-$scalaVersionMajor-${version.value}-assembly.jar"
+    },
+    target in assembly := {
+      val scalaVersionMajor = (scalaVersion.value).split('.').dropRight(1).mkString("_")
+      baseDirectory.value.getParentFile / "target" / scalaVersionMajor
+    },
+    addArtifact(Artifact("shaded-akka-dns", "assembly"), sbtassembly.AssemblyKeys.assembly),
+    assemblyShadeRules in assembly := Seq(
+      ShadeRule.rename("akka.io.AsyncDnsResolver**" -> "com.lightbend.rp.internal.@0").inAll,
+      ShadeRule.rename("ru.smslv**" -> "com.lightbend.rp.internal.@0").inAll
+    ),
+    libraryDependencies ++= Seq(
+      "ru.smslv.akka"            %% "akka-dns"            % Versions.akkaDns
+    ),
+    assemblyExcludedJars in assembly := {
+      (fullClasspath in assembly).value.filterNot(_.data.getName.startsWith("akka-dns"))
+    }
+  )
+
 lazy val common = createProject("reactive-lib-common", "common")
   .settings(
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
