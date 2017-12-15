@@ -172,6 +172,7 @@ lazy val shadedAkkaDns = Project(id = "shaded-akka-dns", base = file("shaded-akk
     target in assembly := {
       baseDirectory.value / "target" / scalaVersionMajor.value
     },
+    packageBin in Compile := (assembly in Compile).value,
     addArtifact(Artifact("shaded-akka-dns", "assembly"), sbtassembly.AssemblyKeys.assembly),
     assemblyShadeRules in assembly := Seq(
       ShadeRule.rename("akka.io.AsyncDnsResolver**" -> "com.lightbend.rp.internal.@0").inAll,
