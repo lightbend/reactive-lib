@@ -17,7 +17,7 @@
 package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor._
-import akka.io.AsyncDnsResolver.SrvResolved
+import com.lightbend.rp.internal.akka.io.AsyncDnsResolver.SrvResolved
 import akka.io.Dns.Resolved
 import akka.io.{ Dns, IO }
 import akka.pattern.ask
@@ -26,7 +26,7 @@ import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocatorLike.{ AddressSe
 import java.net.URI
 import java.util.concurrent.ThreadLocalRandom
 
-import ru.smslv.akka.dns.raw.SRVRecord
+import com.lightbend.rp.internal.ru.smslv.akka.dns.raw.SRVRecord
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
