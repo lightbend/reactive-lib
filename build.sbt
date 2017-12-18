@@ -3,6 +3,7 @@ import scala.collection.immutable.Seq
 import scala.xml.{ Node => XmlNode, NodeSeq => XmlNodeSeq, _ }
 import scala.xml.transform.{ RewriteRule, RuleTransformer }
 import ReleaseTransformations._
+import sbtassembly.MergeStrategy
 
 lazy val Versions = new {
   val akka                      = "2.4.12" // First version cross-compiled to 2.12
@@ -184,6 +185,38 @@ lazy val shadedAkkaDns = Project(id = "shaded-akka-dns", base = file("shaded-akk
     ),
     assemblyExcludedJars in assembly := {
       (fullClasspath in assembly).value.filterNot(_.data.getName.startsWith("akka-dns"))
+    },
+    assemblyMergeStrategy in assembly := {
+      case v @ "reference.conf" =>
+        // Apply custom merge strategy to `reference.conf` within Akka DNS jar to rename configured classes from
+        // `ru.smslv` package to `com.lightbend.rp.internal.ru.smslv`.
+        new MergeStrategy {
+          override val name: String = "Akka DNS reference.conf merge"
+          override def apply(tempDir: File, path: String, files: scala.Seq[File]): Either[String, Seq[(File, String)]] = {
+            val (source, _, _, _) = sbtassembly.AssemblyUtils.sourceOfFileForMerge(tempDir, files.head)
+
+            // Only apply this strategy if the reference.conf has indeed come from the Akka DNS jar, else fallback to
+            // existing strategy
+            if (source.getName.startsWith("akka-dns") && source.getName.endsWith(".jar")) {
+              import scala.collection.JavaConverters._
+              val file = MergeStrategy.createMergeTarget(tempDir, path)
+              val lines = java.nio.file.Files.readAllLines(files.head.toPath).asScala
+              val linesShaded = lines.map(_.replace("ru.smslv", "com.lightbend.rp.internal.ru.smslv"))
+              linesShaded.foreach { v =>
+                IO.append(file, v)
+                IO.append(file, IO.Newline.getBytes(IO.defaultCharset))
+              }
+              Right(Seq(file -> path))
+            } else {
+              val existingStrategy = (assemblyMergeStrategy in assembly).value
+              existingStrategy(v).apply(tempDir, path, files).map(_.toList)
+            }
+          }
+        }
+
+      case v =>
+        val existingStrategy = (assemblyMergeStrategy in assembly).value
+        existingStrategy(v)
     },
     pomPostProcess := { (node: XmlNode) =>
       new RuleTransformer(
