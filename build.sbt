@@ -261,6 +261,7 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
   .settings(
     libraryDependencies ++= Seq(
       "com.lightbend.akka"      %% "akka-management-cluster-http" % Versions.akkaManagementClusterHttp,
+      "com.typesafe.akka"       %% "akka-testkit"                 % Versions.akka     % "test",
       "com.typesafe.akka"       %% "akka-cluster"                 % Versions.akka     % "provided",
       "ru.smslv.akka"           %% "akka-dns"                     % Versions.akkaDns
     ),

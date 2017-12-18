@@ -24,16 +24,16 @@ import akka.http.scaladsl.model.headers.{ Authorization, OAuth2BearerToken }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.FileIO
-import com.lightbend.rp.akkaclusterbootstrap.AkkaManagementPortName
+import com.lightbend.rp.akkaclusterbootstrap.{ AkkaManagementPortName, Settings }
 import com.lightbend.rp.common._
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import com.typesafe.sslconfig.ssl.TrustStoreConfig
 import java.nio.file.Paths
+
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
-
 import JsonFormat._
 import ServiceDiscovery._
 
@@ -61,6 +61,8 @@ class ClusterServiceDiscovery(system: ActorSystem) extends ServiceDiscovery {
   import system.dispatcher
 
   private val http = Http()(system)
+
+  private val settings = Settings(system)
 
   private implicit val mat: ActorMaterializer = ActorMaterializer()(system)
 
@@ -111,7 +113,7 @@ class ClusterServiceDiscovery(system: ActorSystem) extends ServiceDiscovery {
       port <- Try(portStr.toInt).toOption
     } yield {
       val path = Uri.Path.Empty / "api" / "v1" / "namespaces" / namespace / "pods"
-      val query = Uri.Query("labelSelector" -> s"appName=$name")
+      val query = Uri.Query("labelSelector" -> settings.podLabelSelector(name))
       val uri = Uri.from(scheme = "https", host = host, port = port)
         .withPath(path)
         .withQuery(query)
