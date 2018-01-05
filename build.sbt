@@ -7,7 +7,7 @@ import ReleaseTransformations._
 lazy val Versions = new {
   val akka                      = "2.4.12" // First version cross-compiled to 2.12
   val akkaDns                   = "2.4.2"
-  val akkaManagementClusterHttp = "0.4.1"
+  val akkaManagement            = "0.7.1"
   val lagom13                   = "1.3.0"
   val lagom14                   = "1.4.0-M2"
   val play25                    = "2.5.0"
@@ -260,10 +260,11 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
   .dependsOn(serviceDiscovery)
   .settings(
     libraryDependencies ++= Seq(
-      "com.lightbend.akka"      %% "akka-management-cluster-http" % Versions.akkaManagementClusterHttp,
-      "com.typesafe.akka"       %% "akka-testkit"                 % Versions.akka     % "test",
-      "com.typesafe.akka"       %% "akka-cluster"                 % Versions.akka     % "provided",
-      "ru.smslv.akka"           %% "akka-dns"                     % Versions.akkaDns
+      "com.lightbend.akka.discovery"  %% "akka-discovery-kubernetes-api"     % Versions.akkaManagement,
+      "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % Versions.akkaManagement,
+      "com.typesafe.akka"             %% "akka-testkit"                      % Versions.akka     % "test",
+      "com.typesafe.akka"             %% "akka-cluster"                      % Versions.akka     % "provided",
+      "ru.smslv.akka"                 %% "akka-dns"                          % Versions.akkaDns
     ),
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
     //pomExclude += ("ru.smslv.akka", s"akka-dns_${semanticVersioningMajor(scalaVersion.value)}", Versions.akkaDns)
