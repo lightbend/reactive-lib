@@ -17,9 +17,11 @@
 package com.lightbend.rp.status
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.management.http.{ ManagementRouteProvider, ManagementRouteProviderSettings }
 import scala.collection.immutable.Seq
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.reflect.ClassTag
 
 import Directives._
@@ -31,8 +33,12 @@ class ApplicationStatus(system: ExtendedActorSystem) extends Extension with Mana
   private val readinessChecks = instantiateSeq[ReadinessCheck](settings.readinessChecks)
 
   def routes(settings: ManagementRouteProviderSettings): Route = pathPrefix("platform-tooling") {
+    import system.dispatcher
+
     concat(
-      path("ping")(complete("pong!")))
+      path("ping")(complete("pong!")),
+      path("healthy")(complete(isHealthy.map(h => if (h) StatusCodes.OK else StatusCodes.ServiceUnavailable))),
+      path("ready")(complete(isReady.map(r => if (r) StatusCodes.OK else StatusCodes.ServiceUnavailable))))
   }
 
   private def instantiateSeq[T](classes: Seq[String])(implicit tag: ClassTag[T]): Seq[T] = classes.map(instantiate)
@@ -51,6 +57,16 @@ class ApplicationStatus(system: ExtendedActorSystem) extends Extension with Mana
       .getOrElse(
         throw new IllegalArgumentException(s"Incompatible class ${`class`} for ${tag.runtimeClass.getCanonicalName}"))
   }
+
+  private def isHealthy(implicit ec: ExecutionContext): Future[Boolean] =
+    Future
+      .sequence(healthChecks.map(_.healthy(system)))
+      .map(_.forall(identity))
+
+  private def isReady(implicit ec: ExecutionContext): Future[Boolean] =
+    Future
+      .sequence(readinessChecks.map(_.ready(system)))
+      .map(_.forall(identity))
 }
 
 object ApplicationStatus extends ExtensionId[ApplicationStatus] with ExtensionIdProvider {
