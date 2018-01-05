@@ -5,7 +5,7 @@ import scala.xml.transform.{ RewriteRule, RuleTransformer }
 import ReleaseTransformations._
 
 lazy val Versions = new {
-  val akka                      = "2.4.12" // First version cross-compiled to 2.12
+  val akka                      = "2.5.7"
   val akkaDns                   = "2.4.2"
   val akkaManagement            = "0.7.1"
   val lagom13                   = "1.3.0"
@@ -257,21 +257,31 @@ lazy val serviceDiscoveryLagom14Scala = createProject("reactive-lib-service-disc
   )
 
 lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstrap", "akka-cluster-bootstrap")
-  .dependsOn(serviceDiscovery)
+  .dependsOn(akkaManagement, serviceDiscovery, status)
   .settings(
     libraryDependencies ++= Seq(
       "com.lightbend.akka.discovery"  %% "akka-discovery-kubernetes-api"     % Versions.akkaManagement,
       "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % Versions.akkaManagement,
-      "com.typesafe.akka"             %% "akka-testkit"                      % Versions.akka     % "test",
-      "com.typesafe.akka"             %% "akka-cluster"                      % Versions.akka     % "provided",
+      "com.typesafe.akka"             %% "akka-testkit"                      % Versions.akka              % "test",
+      "com.typesafe.akka"             %% "akka-cluster"                      % Versions.akka              % "provided",
       "ru.smslv.akka"                 %% "akka-dns"                          % Versions.akkaDns
     ),
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
     //pomExclude += ("ru.smslv.akka", s"akka-dns_${semanticVersioningMajor(scalaVersion.value)}", Versions.akkaDns)
   )
 
-lazy val playHttpBinding = createProject("reactive-lib-play-http-binding", "play-http-binding")
+lazy val akkaManagement = createProject("reactive-lib-akka-management", "akka-management")
   .dependsOn(common)
+  .settings(
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
+    libraryDependencies ++= Seq(
+      "com.lightbend.akka.management" %% "akka-management" % Versions.akkaManagement,
+      "com.typesafe.akka"             %% "akka-actor"      % Versions.akka              % "provided"
+    )
+  )
+
+lazy val playHttpBinding = createProject("reactive-lib-play-http-binding", "play-http-binding")
+  .dependsOn(common, status)
   .settings(
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
@@ -284,4 +294,10 @@ lazy val secrets = createProject("reactive-lib-secrets", "secrets")
       "com.typesafe.akka" %% "akka-actor"  % Versions.akka % "provided",
       "com.typesafe.akka" %% "akka-stream" % Versions.akka % "provided"
     )
+  )
+
+lazy val status = createProject("reactive-lib-status", "status")
+  .dependsOn(akkaManagement)
+  .settings(
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )

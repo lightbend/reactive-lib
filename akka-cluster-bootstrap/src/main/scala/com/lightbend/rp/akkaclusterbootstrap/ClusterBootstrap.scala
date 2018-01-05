@@ -18,7 +18,6 @@ package com.lightbend.rp.akkaclusterbootstrap
 
 import akka.actor._
 import akka.cluster.Cluster
-import akka.management.AkkaManagement
 import akka.management.cluster.bootstrap.{ ClusterBootstrap => AkkaClusterBootstrap }
 import com.lightbend.rp.common.Platform
 
@@ -30,7 +29,6 @@ final class ClusterBootstrap(system: ExtendedActorSystem) extends Extension {
   } else if (Platform.active.isEmpty) {
     system.log.info("ClusterBootstrap is enabled but no active platform detected (i.e. running locally), no action will be taken")
   } else {
-    AkkaManagement(system).start()
     AkkaClusterBootstrap(system).start()
   }
 }
