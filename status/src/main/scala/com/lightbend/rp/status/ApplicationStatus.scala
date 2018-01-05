@@ -22,15 +22,29 @@ import akka.http.scaladsl.server._
 import akka.management.http.{ ManagementRouteProvider, ManagementRouteProviderSettings }
 import scala.collection.immutable.Seq
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.reflect.ClassTag
 
 import Directives._
 
 class ApplicationStatus(system: ExtendedActorSystem) extends Extension with ManagementRouteProvider {
   private val settings = Settings(system)
 
-  private val healthChecks = instantiateSeq[HealthCheck](settings.healthChecks)
-  private val readinessChecks = instantiateSeq[ReadinessCheck](settings.readinessChecks)
+  private val healthChecks =
+    settings
+      .healthChecks
+      .map(c =>
+        system
+          .dynamicAccess
+          .createInstanceFor[HealthCheck](c, Seq.empty)
+          .getOrElse(throw new IllegalArgumentException(s"Incompatible HealthCheck class definition: $c")))
+
+  private val readinessChecks =
+    settings
+      .readinessChecks
+      .map(c =>
+        system
+          .dynamicAccess
+          .createInstanceFor[ReadinessCheck](c, Seq.empty)
+          .getOrElse(throw new IllegalArgumentException(s"Incompatible ReadinessCheck class definition: $c")))
 
   def routes(settings: ManagementRouteProviderSettings): Route = pathPrefix("platform-tooling") {
     import system.dispatcher
@@ -39,23 +53,6 @@ class ApplicationStatus(system: ExtendedActorSystem) extends Extension with Mana
       path("ping")(complete("pong!")),
       path("healthy")(complete(isHealthy.map(h => if (h) StatusCodes.OK else StatusCodes.ServiceUnavailable))),
       path("ready")(complete(isReady.map(r => if (r) StatusCodes.OK else StatusCodes.ServiceUnavailable))))
-  }
-
-  private def instantiateSeq[T](classes: Seq[String])(implicit tag: ClassTag[T]): Seq[T] = classes.map(instantiate)
-
-  private def instantiate[T](`class`: String)(implicit tag: ClassTag[T]): T = {
-    val dynamic = system.dynamicAccess
-
-    dynamic
-      .createInstanceFor[T](`class`, Seq(classOf[ExtendedActorSystem] -> system))
-      .recoverWith {
-        case _ => dynamic.createInstanceFor[T](`class`, Seq(classOf[ActorSystem] -> system))
-      }
-      .recoverWith {
-        case _ => dynamic.createInstanceFor[T](`class`, Seq.empty)
-      }
-      .getOrElse(
-        throw new IllegalArgumentException(s"Incompatible class ${`class`} for ${tag.runtimeClass.getCanonicalName}"))
   }
 
   private def isHealthy(implicit ec: ExecutionContext): Future[Boolean] =

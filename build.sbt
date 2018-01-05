@@ -141,6 +141,7 @@ lazy val root = createProject("reactive-lib", ".")
 */
   .aggregate(
     akkaClusterBootstrap,
+    akkaManagement,
     common,
     playHttpBinding,
     secrets,
@@ -148,7 +149,8 @@ lazy val root = createProject("reactive-lib", ".")
     serviceDiscoveryLagom13Java,
     serviceDiscoveryLagom13Scala,
     serviceDiscoveryLagom14Java,
-    serviceDiscoveryLagom14Scala
+    serviceDiscoveryLagom14Scala,
+    status
   )
 
 lazy val common = createProject("reactive-lib-common", "common")
