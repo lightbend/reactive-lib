@@ -19,17 +19,19 @@ package com.lightbend.rp.akkaclusterbootstrap
 import akka.actor._
 import akka.cluster.Cluster
 import akka.management.cluster.bootstrap.{ ClusterBootstrap => AkkaClusterBootstrap }
-import com.lightbend.rp.common.Platform
+import com.lightbend.rp.common.{ AkkaClusterBootstrapModule, Module, Platform }
 
 final class ClusterBootstrap(system: ExtendedActorSystem) extends Extension {
-  val cluster = Cluster(system)
+  if (Module.enabled(AkkaClusterBootstrapModule)) {
+    val cluster = Cluster(system)
 
-  if (cluster.settings.SeedNodes.nonEmpty) {
-    system.log.warning("ClusterBootstrap is enabled but seed nodes are defined, no action will be taken")
-  } else if (Platform.active.isEmpty) {
-    system.log.info("ClusterBootstrap is enabled but no active platform detected (i.e. running locally), no action will be taken")
-  } else {
-    AkkaClusterBootstrap(system).start()
+    if (cluster.settings.SeedNodes.nonEmpty) {
+      system.log.warning("ClusterBootstrap is enabled but seed nodes are defined, no action will be taken")
+    } else if (Platform.active.isEmpty) {
+      system.log.info("ClusterBootstrap is enabled but no active platform detected (i.e. running locally), no action will be taken")
+    } else {
+      AkkaClusterBootstrap(system).start()
+    }
   }
 }
 
