@@ -20,5 +20,5 @@ import akka.actor.ExtendedActorSystem
 import scala.concurrent.{ ExecutionContext, Future }
 
 trait HealthCheck {
-  def ready(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[Boolean]
+  def healthy(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[Boolean]
 }
