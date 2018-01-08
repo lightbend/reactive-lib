@@ -14,18 +14,11 @@
  * limitations under the License.
  */
 
-package com.lightbend.rp.akkaclusterbootstrap.kubernetes
+package com.lightbend.rp.status
 
-import scala.collection.immutable.Seq
+import akka.actor.ExtendedActorSystem
+import scala.concurrent.{ ExecutionContext, Future }
 
-object PodList {
-  case class Port(name: String, containerPort: Int)
-  case class Container(name: String, ports: Seq[Port])
-  case class Spec(containers: Seq[Container])
-  case class Status(podIP: Option[String])
-  case class Item(spec: Spec, status: Status)
+trait ReadinessCheck {
+  def ready(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[Boolean]
 }
-
-import PodList._
-
-case class PodList(items: Seq[Item])

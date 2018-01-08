@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.lightbend.rp.akkaclusterbootstrap
+package com.lightbend.rp.status
 
-package object kubernetes {
-  val KubernetesCAPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-  val KubernetesToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+import akka.actor.ExtendedActorSystem
+import scala.concurrent.{ ExecutionContext, Future }
+
+trait HealthCheck {
+  def healthy(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[Boolean]
 }

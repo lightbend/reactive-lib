@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package com.lightbend.rp.akkaclusterbootstrap
+package com.lightbend.rp.status
 
 import akka.actor._
+import scala.collection.JavaConverters._
+import scala.collection.immutable.Seq
 
 final class Settings(system: ExtendedActorSystem) extends Extension {
-  private val bootstrap = system.settings.config.getConfig("rp.akka-cluster-bootstrap")
+  private val status = system.settings.config.getConfig("com.lightbend.platform-tooling.status")
 
-  def podLabelSelector(name: String): String =
-    bootstrap.getString("pod-label-selector").format(name)
+  val healthChecks: Seq[String] = status.getStringList("health-checks").asScala.toVector
+
+  val readinessChecks: Seq[String] = status.getStringList("readiness-checks").asScala.toVector
 }
 
 object Settings extends ExtensionId[Settings] with ExtensionIdProvider {

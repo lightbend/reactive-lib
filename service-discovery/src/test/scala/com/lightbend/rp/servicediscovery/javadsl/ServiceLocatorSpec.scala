@@ -31,7 +31,7 @@ import scala.collection.immutable.Seq
 object ServiceLocatorSpec {
   def config = ConfigFactory
     .parseString(
-      s"""|rp.service-discovery {
+      s"""|com.lightbend.platform-tooling.service-discovery {
           |  external-service-addresses {
           |    "has-one" = ["http://127.0.0.1:9000"]
           |    "has-two" = ["http://127.0.0.1:8000", "http://127.0.0.1:8001"]

@@ -17,12 +17,14 @@
 package com.lightbend.rp.akkaclusterbootstrap
 
 import akka.actor.ActorSystem
-import akka.discovery.ServiceDiscovery
+import akka.discovery.{ ServiceDiscovery, SimpleServiceDiscovery }
+import akka.discovery.SimpleServiceDiscovery.{ Resolved, ResolvedTarget }
 import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator
+
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-class ClusterServiceDiscovery(system: ActorSystem) extends ServiceDiscovery {
+class ClusterServiceDiscovery(system: ActorSystem) extends SimpleServiceDiscovery {
   import ServiceDiscovery._
   import system.dispatcher
 
