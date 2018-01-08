@@ -7,7 +7,7 @@ import ReleaseTransformations._
 lazy val Versions = new {
   val akka                      = "2.5.7"
   val akkaDns                   = "2.4.2"
-  val akkaManagement            = "0.7.1"
+  val akkaManagement            = "0.8.0"
   val lagom13                   = "1.3.0"
   val lagom14                   = "1.4.0-M2"
   val play25                    = "2.5.0"
