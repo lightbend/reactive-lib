@@ -20,18 +20,18 @@ import akka.actor._
 import akka.management.{ AkkaManagement => AkkaMgmt }
 import com.lightbend.rp.common.{ AkkaManagementModule, Module, Platform }
 
-final class AkkaManagement(system: ExtendedActorSystem) extends Extension {
+final class AkkaManagementAutostart(system: ExtendedActorSystem) extends Extension {
   if (Module.enabled(AkkaManagementModule)) {
     if (Platform.active.isEmpty) {
-      system.log.info("AkkaManagement is enabled but no active platform detected (i.e. running locally), no action will be taken")
+      system.log.info("AkkaManagementAutostart is enabled but no active platform detected (i.e. running locally), no action will be taken")
     } else {
       AkkaMgmt(system).start()
     }
   }
 }
 
-object AkkaManagement extends ExtensionId[AkkaManagement] with ExtensionIdProvider {
-  override def lookup: AkkaManagement.type = AkkaManagement
-  override def get(system: ActorSystem): AkkaManagement = super.get(system)
-  override def createExtension(system: ExtendedActorSystem): AkkaManagement = new AkkaManagement(system)
+object AkkaManagementAutostart extends ExtensionId[AkkaManagementAutostart] with ExtensionIdProvider {
+  override def lookup: AkkaManagementAutostart.type = AkkaManagementAutostart
+  override def get(system: ActorSystem): AkkaManagementAutostart = super.get(system)
+  override def createExtension(system: ExtendedActorSystem): AkkaManagementAutostart = new AkkaManagementAutostart(system)
 }
