@@ -17,7 +17,7 @@
 package com.lightbend.rp.akkamanagement
 
 import akka.actor._
-import akka.management.{ AkkaManagement => AkkaMgmt }
+import akka.management.AkkaManagement
 import com.lightbend.rp.common.{ AkkaManagementModule, Module, Platform }
 
 final class AkkaManagementAutostart(system: ExtendedActorSystem) extends Extension {
@@ -25,7 +25,7 @@ final class AkkaManagementAutostart(system: ExtendedActorSystem) extends Extensi
     if (Platform.active.isEmpty) {
       system.log.info("AkkaManagementAutostart is enabled but no active platform detected (i.e. running locally), no action will be taken")
     } else {
-      AkkaMgmt(system).start()
+      AkkaManagement(system).start()
     }
   }
 }

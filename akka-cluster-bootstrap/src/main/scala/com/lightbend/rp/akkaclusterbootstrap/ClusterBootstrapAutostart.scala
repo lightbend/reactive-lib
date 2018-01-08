@@ -18,25 +18,25 @@ package com.lightbend.rp.akkaclusterbootstrap
 
 import akka.actor._
 import akka.cluster.Cluster
-import akka.management.cluster.bootstrap.{ ClusterBootstrap => AkkaClusterBootstrap }
+import akka.management.cluster.bootstrap.ClusterBootstrap
 import com.lightbend.rp.common.{ AkkaClusterBootstrapModule, Module, Platform }
 
-final class ClusterBootstrap(system: ExtendedActorSystem) extends Extension {
+final class ClusterBootstrapAutostart(system: ExtendedActorSystem) extends Extension {
   if (Module.enabled(AkkaClusterBootstrapModule)) {
     val cluster = Cluster(system)
 
     if (cluster.settings.SeedNodes.nonEmpty) {
-      system.log.warning("ClusterBootstrap is enabled but seed nodes are defined, no action will be taken")
+      system.log.warning("ClusterBootstrapAutostart is enabled but seed nodes are defined, no action will be taken")
     } else if (Platform.active.isEmpty) {
-      system.log.info("ClusterBootstrap is enabled but no active platform detected (i.e. running locally), no action will be taken")
+      system.log.info("ClusterBootstrapAutostart is enabled but no active platform detected (i.e. running locally), no action will be taken")
     } else {
-      AkkaClusterBootstrap(system).start()
+      ClusterBootstrap(system).start()
     }
   }
 }
 
-object ClusterBootstrap extends ExtensionId[ClusterBootstrap] with ExtensionIdProvider {
-  override def lookup: ClusterBootstrap.type = ClusterBootstrap
-  override def get(system: ActorSystem): ClusterBootstrap = super.get(system)
-  override def createExtension(system: ExtendedActorSystem): ClusterBootstrap = new ClusterBootstrap(system)
+object ClusterBootstrapAutostart extends ExtensionId[ClusterBootstrapAutostart] with ExtensionIdProvider {
+  override def lookup: ClusterBootstrapAutostart.type = ClusterBootstrapAutostart
+  override def get(system: ActorSystem): ClusterBootstrapAutostart = super.get(system)
+  override def createExtension(system: ExtendedActorSystem): ClusterBootstrapAutostart = new ClusterBootstrapAutostart(system)
 }
