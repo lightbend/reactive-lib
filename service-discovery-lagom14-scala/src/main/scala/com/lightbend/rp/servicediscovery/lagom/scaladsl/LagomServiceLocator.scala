@@ -28,7 +28,7 @@ class LagomServiceLocator(circuitBreakersPanel: CircuitBreakersPanel)(implicit a
 
   override def locate(name: String, serviceCall: Descriptor.Call[_, _]): Future[Option[JavaURI]] =
     for {
-      http <- ServiceLocator.lookupOne(name, "lagom-http-api")
+      http <- ServiceLocator.lookupOne(name, "http")
       result <- http match {
         case None => ServiceLocator.lookupOne(name)
         case Some(r) => Future.successful(Some(r))
