@@ -240,7 +240,8 @@ lazy val serviceDiscoveryLagom14Java = createProject("reactive-lib-service-disco
     crossPaths := false,
     libraryDependencies ++= Seq(
       "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom14 % "provided"
-    )
+    ),
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
     //assemblyInclude(),
     //assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
   )
@@ -253,7 +254,8 @@ lazy val serviceDiscoveryLagom14Scala = createProject("reactive-lib-service-disc
   .settings(
     libraryDependencies ++= Seq(
       "com.lightbend.lagom" %% "lagom-scaladsl-client" % Versions.lagom14 % "provided",
-    )
+    ),
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
     //assemblyInclude(),
     //assemblyExcludeLocal(Seq("common"), Seq("servicediscovery", "javadsl"), Seq("servicediscovery", "scaladsl"))
   )
