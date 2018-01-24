@@ -17,16 +17,15 @@
 package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor.{ ActorRef, ActorSystem }
+import akka.io.Dns
 import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
+import com.lightbend.rp.asyncdns.AsyncDnsResolver
+import com.lightbend.rp.asyncdns.raw.SRVRecord
+import com.lightbend.rp.common.{ Kubernetes, Platform }
 import com.typesafe.config.ConfigFactory
 import java.net.{ InetAddress, URI }
-
-import akka.io.{ AsyncDnsResolver, Dns }
-import com.lightbend.rp.common.{ Kubernetes, Platform }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ AsyncWordSpecLike, BeforeAndAfterAll, Inside, Matchers }
-import ru.smslv.akka.dns.raw.SRVRecord
-
 import scala.collection.immutable.Seq
 
 object ServiceLocatorSpec {
