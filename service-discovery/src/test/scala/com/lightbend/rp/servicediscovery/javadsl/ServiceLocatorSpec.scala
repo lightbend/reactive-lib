@@ -22,9 +22,7 @@ import com.lightbend.rp.servicediscovery.scaladsl.{ Service, Settings }
 import com.typesafe.config.ConfigFactory
 import java.net.URI
 import java.util.Optional
-
 import org.scalatest.{ AsyncWordSpecLike, BeforeAndAfterAll, Matchers }
-
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 

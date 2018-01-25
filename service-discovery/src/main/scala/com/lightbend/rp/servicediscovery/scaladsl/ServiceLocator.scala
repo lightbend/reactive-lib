@@ -17,19 +17,19 @@
 package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor._
-import akka.io.AsyncDnsResolver.SrvResolved
 import akka.io.Dns.Resolved
 import akka.io.{ Dns, IO }
 import akka.pattern.ask
+import com.lightbend.rp.asyncdns.AsyncDnsResolver
+import com.lightbend.rp.asyncdns.raw.SRVRecord
 import com.lightbend.rp.common._
 import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocatorLike.{ AddressSelection, AddressSelectionRandom }
 import java.net.URI
 import java.util.concurrent.ThreadLocalRandom
-
-import ru.smslv.akka.dns.raw.SRVRecord
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
+
+import AsyncDnsResolver.SrvResolved
 
 case class ServiceLocator(as: ActorSystem) {
   def lookupOne(namespace: String, name: String, endpoint: String): Future[Option[Service]] =
