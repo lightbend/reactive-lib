@@ -5,7 +5,6 @@ lazy val Versions = new {
   val akka                      = "2.5.7"
   val akkaDns                   = "2.4.2"
   val akkaManagement            = "0.9.0"
-  val lagom13                   = "1.3.0"
   val lagom14                   = "1.4.0"
   val play25                    = "2.5.0"
   val play26                    = "2.6.0"
@@ -79,8 +78,6 @@ lazy val root = createProject("reactive-lib", ".")
     playHttpBinding,
     secrets,
     serviceDiscovery,
-    serviceDiscoveryLagom13Java,
-    serviceDiscoveryLagom13Scala,
     serviceDiscoveryLagom14Java,
     serviceDiscoveryLagom14Scala,
     status
@@ -110,32 +107,13 @@ lazy val serviceDiscovery = createProject("reactive-lib-service-discovery", "ser
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
-lazy val serviceDiscoveryLagom13Java = createProject("reactive-lib-service-discovery-lagom13-java", "service-discovery-lagom13-java")
-  .dependsOn(serviceDiscovery)
-  .settings(
-    autoScalaLibrary := false,
-    crossPaths := false,
-    libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom13 % "provided"
-    )
-  )
-
-lazy val serviceDiscoveryLagom13Scala = createProject("reactive-lib-service-discovery-lagom13-scala", "service-discovery-lagom13-scala")
-  .dependsOn(serviceDiscovery)
-  .settings(
-    libraryDependencies ++= Seq(
-      "com.lightbend.lagom" %% "lagom-scaladsl-client"   % Versions.lagom13 % "provided"
-    )
-  )
-
 lazy val serviceDiscoveryLagom14Java = createProject("reactive-lib-service-discovery-lagom14-java", "service-discovery-lagom14-java")
   .dependsOn(serviceDiscovery)
   .settings(
-    autoScalaLibrary := false,
-    crossPaths := false,
     libraryDependencies ++= Seq(
       "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom14 % "provided"
-    )
+    ),
+    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
 lazy val serviceDiscoveryLagom14Scala = createProject("reactive-lib-service-discovery-lagom14-scala", "service-discovery-lagom14-scala")
