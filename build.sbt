@@ -59,11 +59,11 @@ def createProject(id: String, path: String, headers: Boolean = true) =
       checkSnapshotDependencies,
       inquireVersions,
       runClean,
-      releaseStepCommand("+test"),
+      releaseStepCommandAndRemaining("+test"),
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
-      releaseStepCommand("+publishSigned"),
+      releaseStepCommandAndRemaining("+publishSigned"),
       setNextVersion,
       commitNextVersion,
       pushChanges
@@ -135,8 +135,7 @@ lazy val serviceDiscoveryLagom14Java = createProject("reactive-lib-service-disco
     crossPaths := false,
     libraryDependencies ++= Seq(
       "com.lightbend.lagom" %% "lagom-javadsl-client" % Versions.lagom14 % "provided"
-    ),
-    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
+    )
   )
 
 lazy val serviceDiscoveryLagom14Scala = createProject("reactive-lib-service-discovery-lagom14-scala", "service-discovery-lagom14-scala")
