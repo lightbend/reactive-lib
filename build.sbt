@@ -59,11 +59,11 @@ def createProject(id: String, path: String, headers: Boolean = true) =
       checkSnapshotDependencies,
       inquireVersions,
       runClean,
-      releaseStepCommandAndRemaining("+test"),
+      releaseStepCommand("+test"),
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
-      releaseStepCommandAndRemaining("+publishSigned"),
+      releaseStepCommand("+publishSigned"),
       setNextVersion,
       commitNextVersion,
       pushChanges
@@ -74,6 +74,7 @@ lazy val root = createProject("reactive-lib", ".")
   .aggregate(
     akkaClusterBootstrap,
     akkaManagement,
+    asyncDns,
     common,
     playHttpBinding,
     secrets,
