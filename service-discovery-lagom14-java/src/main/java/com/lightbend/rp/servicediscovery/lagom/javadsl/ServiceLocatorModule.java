@@ -26,7 +26,7 @@ public class ServiceLocatorModule extends Module {
 
     @Override
     public Seq<Binding<?>> bindings(Environment environment, Configuration configuration) {
-        return environment.mode().asJava() == play.Mode.PROD ? seq() : seq(
+        return environment.mode().asJava() != play.Mode.PROD ? seq() : seq(
                 bind(ServiceLocator.class).to(LagomServiceLocator.class)
         );
     }
