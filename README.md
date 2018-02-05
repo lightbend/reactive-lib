@@ -3,6 +3,12 @@
 An application library that is a component of [Lightbend Platform Tooling](https://s3-us-west-2.amazonaws.com/rp-tooling-temp-docs/home.html),
 a project aimed at making it easier to deploy to orchestrated environments like Kubernetes.
 
+## Usage
+
+This project is included in your application by [sbt-reactive-app](https://github.com/lightbend/sbt-reactive-app). Consult
+the [Lightbend Platform Tooling](https://s3-us-west-2.amazonaws.com/rp-tooling-temp-docs/home.html) documentation
+for setup and configuration.
+
 ## Maintenance
 
 Enterprise Suite Platform Team <es-platform@lightbend.com>
