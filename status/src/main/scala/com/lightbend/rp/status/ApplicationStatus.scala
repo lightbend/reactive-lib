@@ -55,12 +55,12 @@ class ApplicationStatus(system: ExtendedActorSystem) extends Extension with Mana
       path("ready")(complete(isReady.map(r => if (r) StatusCodes.OK else StatusCodes.ServiceUnavailable))))
   }
 
-  private def isHealthy(implicit ec: ExecutionContext): Future[Boolean] =
+  def isHealthy(implicit ec: ExecutionContext): Future[Boolean] =
     Future
       .sequence(healthChecks.map(_.healthy(system)))
       .map(_.forall(identity))
 
-  private def isReady(implicit ec: ExecutionContext): Future[Boolean] =
+  def isReady(implicit ec: ExecutionContext): Future[Boolean] =
     Future
       .sequence(readinessChecks.map(_.ready(system)))
       .map(_.forall(identity))
