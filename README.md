@@ -8,7 +8,7 @@ This project is a component of [Lightbend Reactive Platform Tooling](https://dev
 ## Usage
 
 This project is included in your application by [sbt-reactive-app](https://github.com/lightbend/sbt-reactive-app). Consult
-the [Lightbend Platform Tooling](https://s3-us-west-2.amazonaws.com/rp-tooling-temp-docs/home.html) documentation
+the [Lightbend Reactive Platform Tooling](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/) documentation
 for setup and configuration.
 
 ## Maintenance
