@@ -1,7 +1,9 @@
 # reactive-lib
 
-An application library that is a component of [Lightbend Platform Tooling](https://s3-us-west-2.amazonaws.com/rp-tooling-temp-docs/home.html),
-a project aimed at making it easier to deploy to orchestrated environments like Kubernetes.
+[![GitHub version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/lightbend/reactive-lib/releases)
+[![Build Status](https://api.travis-ci.org/lightbend/reactive-lib.png?branch=master)](https://travis-ci.org/lightbend/reactive-lib)
+
+This project is a component of [Lightbend Reactive Platform Tooling](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/). Refer to its documentation for usage, examples, and reference information.
 
 ## Usage
 
