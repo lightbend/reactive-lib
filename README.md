@@ -3,12 +3,12 @@
 [![GitHub version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/lightbend/reactive-lib/releases)
 [![Build Status](https://api.travis-ci.org/lightbend/reactive-lib.png?branch=master)](https://travis-ci.org/lightbend/reactive-lib)
 
-This project is a component of [Lightbend Reactive Platform Tooling](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/). Refer to its documentation for usage, examples, and reference information.
+This project is a component of [Lightbend Orchestration for Kubernetes](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/). Refer to its documentation for usage, examples, and reference information.
 
 ## Usage
 
 This project is included in your application by [sbt-reactive-app](https://github.com/lightbend/sbt-reactive-app). Consult
-the [Lightbend Reactive Platform Tooling](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/) documentation
+[Lightbend Orchestration for Kubernetes](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/) documentation
 for setup and configuration.
 
 ## Maintenance
