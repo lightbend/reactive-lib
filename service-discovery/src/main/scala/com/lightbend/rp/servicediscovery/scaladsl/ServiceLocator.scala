@@ -91,8 +91,11 @@ trait ServiceLocatorLike {
 
   def translateName(namespace: Option[String], name: String, endpoint: String): String =
     targetRuntime match {
+      case _ if endpoint.isEmpty =>
+        name
+
       case Some(Kubernetes) =>
-        if (name.exists(DnsCharacters.contains) && endpoint.isEmpty) {
+        if (name.exists(DnsCharacters.contains)) {
           name
         } else {
           val serviceNamespace = namespace.orElse(namespaceFromEnv()).getOrElse(kubernetes.DefaultNamespace)
@@ -100,8 +103,19 @@ trait ServiceLocatorLike {
           val endpointName = endpointServiceName(endpoint)
 
           // @TODO hardcoded _tcp
-          // @TODO if endpoint is empty, consider this better - can you even lookup if the endpoint is empty???
           s"_$endpointName._tcp.$serviceName.$serviceNamespace.svc.cluster.local"
+        }
+
+      case Some(Mesos) =>
+        if (name.exists(DnsCharacters.contains)) {
+          name
+        } else {
+          val serviceNamespace = namespace.orElse(namespaceFromEnv())
+          val serviceName = endpointServiceName(name)
+          val endpointName = endpointServiceName(endpoint)
+
+          // @TODO hardcoded _tcp
+          s"_$endpointName._$serviceName${serviceNamespace.fold("")(ns => s"-$ns")}._tcp.marathon.mesos"
         }
 
       case None =>
@@ -115,17 +129,43 @@ trait ServiceLocatorLike {
           .filter(_.length >= 2)
           .map(parts => normalizeProtocol(parts(1).dropWhile(_ == '_'), endpoint))
 
+      case Some(Mesos) =>
+        // Mesos has an undocumented port name query syntax (https://github.com/mesosphere/mesos-dns/issues/478)
+        // so the protocol specification may not always be the second entry, sometimes it is the third.
+
+        val knownSrvProtocols = Set("_tcp", "_udp")
+        val parts = srvName.split('.')
+        val candidates = Vector(parts.lift(1), parts.lift(2)).flatten
+
+        candidates
+          .find(knownSrvProtocols.contains)
+          .orElse(candidates.headOption)
+          .map(part => normalizeProtocol(part.dropWhile(_ == '_'), endpoint))
+
       case _ => Option.empty
     }
 
-  def translateResolved(protocol: Option[String], srvRecord: SRVRecord, addressARecord: Dns.Resolved): Seq[Service] =
+  def translateResolvedSrv(protocol: Option[String], srvRecord: SRVRecord, addressARecord: Dns.Resolved): Seq[Service] =
     targetRuntime match {
-      case Some(Kubernetes) =>
+      case Some(Kubernetes | Mesos) =>
         val uris =
           addressARecord.ipv4.map(v4 => new URI(protocol.orNull, null, v4.getHostAddress, srvRecord.port, null, null, null)) ++
             addressARecord.ipv6.map(v6 => new URI(protocol.orNull, null, v6.getHostAddress, srvRecord.port, null, null, null))
 
         uris.map(u => Service(srvRecord.target, u))
+      case None =>
+        Seq.empty
+    }
+
+  def translateResolved(protocol: Option[String], hostname: String, addressARecord: Dns.Resolved): Seq[Service] =
+    targetRuntime match {
+      case Some(Kubernetes | Mesos) =>
+        val uris =
+          addressARecord.ipv4.map(v4 => new URI(protocol.orNull, null, v4.getHostAddress, 0, null, null, null)) ++
+            addressARecord.ipv6.map(v6 => new URI(protocol.orNull, null, v6.getHostAddress, 0, null, null, null))
+
+        uris.map(u => Service(hostname, u))
+
       case None =>
         Seq.empty
     }
@@ -211,7 +251,7 @@ trait ServiceLocatorLike {
           case None =>
             Future.successful(Seq.empty)
 
-          case Some(Kubernetes) =>
+          case Some(Kubernetes | Mesos) =>
             val nameToLookup = translateName(namespace, name, endpoint)
 
             for {
@@ -228,7 +268,7 @@ trait ServiceLocatorLike {
                           .ask(Dns.Resolve(srvRecord.target))(settings.askTimeout)
                           .collect {
                             case aRecord: Resolved =>
-                              translateResolved(protocol, srvRecord, aRecord)
+                              translateResolvedSrv(protocol, srvRecord, aRecord)
                           }
                       }
 
@@ -236,10 +276,8 @@ trait ServiceLocatorLike {
                       .sequence(lookups)
                       .map(_.flatten.toVector)
 
-                  case _: Resolved =>
-                    // Future improvement: support regular DNS
-
-                    Future.successful(Seq.empty)
+                  case r: Resolved =>
+                    Future.successful(translateResolved(translateProtocol(endpoint, r.name), r.name, r))
 
                 }
             } yield result
