@@ -21,7 +21,7 @@ import akka.io.Dns
 import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
 import com.lightbend.rp.asyncdns.AsyncDnsResolver
 import com.lightbend.rp.asyncdns.raw.SRVRecord
-import com.lightbend.rp.common.{ Kubernetes, Platform }
+import com.lightbend.rp.common.{ Kubernetes, Mesos, Platform }
 import com.typesafe.config.ConfigFactory
 import java.net.{ InetAddress, URI }
 import org.scalatest.concurrent.ScalaFutures
@@ -128,60 +128,115 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
         .map(_.contains(Service("has-two", new URI("http://127.0.0.1:8000"))) shouldBe true)
     }
 
-    "perform DNS SRV resolution during lookup" in {
-      val mockDnsResolver = TestProbe()
-      val serviceLocator = createServiceLocator(mockDnsResolver = Some(mockDnsResolver.ref))
-      val result = serviceLocator.lookup("chirper", "friendservice", "friendlookup")
+    "in Kubernetes" should {
+      "perform DNS SRV resolution during lookup" in {
+        val mockDnsResolver = TestProbe()
+        val serviceLocator = createServiceLocator(Kubernetes, mockDnsResolver = Some(mockDnsResolver.ref))
+        val result = serviceLocator.lookup("chirper", "friendservice", "friendlookup")
 
-      mockDnsResolver.expectMsg(Dns.Resolve("_friendlookup._tcp.friendservice.chirper.svc.cluster.local"))
-      mockDnsResolver.reply(AsyncDnsResolver.SrvResolved("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", Seq(
-        SRVRecord("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
+        mockDnsResolver.expectMsg(Dns.Resolve("_friendlookup._tcp.friendservice.chirper.svc.cluster.local"))
+        mockDnsResolver.reply(AsyncDnsResolver.SrvResolved("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", Seq(
+          SRVRecord("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
 
-      mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
-      mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
+        mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
+        mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
 
-      inside(result.futureValue) {
-        case Vector(s: Service) =>
-          s.hostname shouldBe "host1.domain"
-          s.uri.getScheme shouldBe "tcp"
-          s.uri.getUserInfo shouldBe null
-          s.uri.getHost shouldBe "10.0.12.5"
-          s.uri.getPort shouldBe 4568
-          s.uri.getPath shouldBe ""
-          s.uri.getQuery shouldBe null
-          s.uri.getFragment shouldBe null
+        inside(result.futureValue) {
+          case Vector(s: Service) =>
+            s.hostname shouldBe "host1.domain"
+            s.uri.getScheme shouldBe "tcp"
+            s.uri.getUserInfo shouldBe null
+            s.uri.getHost shouldBe "10.0.12.5"
+            s.uri.getPort shouldBe 4568
+            s.uri.getPath shouldBe ""
+            s.uri.getQuery shouldBe null
+            s.uri.getFragment shouldBe null
+        }
+      }
+
+      "ServiceLocator.translateName" should {
+        "translate name with namespace + name + endpoint" in {
+          val serviceLocator = createServiceLocator(Kubernetes)
+          val result = serviceLocator.translateName(Some("chirper"), "friendservice", "api")
+          result shouldBe "_api._tcp.friendservice.chirper.svc.cluster.local"
+        }
+
+        "translate name with namespace from env + name + endpoint" in {
+          val serviceLocator = createServiceLocator(Kubernetes, Map("RP_NAMESPACE" -> "cake"))
+          val result = serviceLocator.translateName(namespace = None, "friendservice", "api")
+          result shouldBe "_api._tcp.friendservice.cake.svc.cluster.local"
+        }
+
+        "translate name with default namespace + name + endpoint" in {
+          val serviceLocator = createServiceLocator(Kubernetes)
+          val result = serviceLocator.translateName(namespace = None, "friendservice", "api")
+          result shouldBe "_api._tcp.friendservice.default.svc.cluster.local"
+        }
+
+        "not translate name containing DNS character" in {
+          val serviceLocator = createServiceLocator(Kubernetes)
+          val result = serviceLocator.translateName(namespace = None, "_native._tcp.cassandra.default.svc.cluster.local", "")
+          result shouldBe "_native._tcp.cassandra.default.svc.cluster.local"
+
+        }
+      }
+    }
+
+    "in Mesos" should {
+      "perform DNS SRV resolution during lookup" in {
+        val mockDnsResolver = TestProbe()
+        val serviceLocator = createServiceLocator(Mesos, mockDnsResolver = Some(mockDnsResolver.ref))
+        val result = serviceLocator.lookup("chirper", "friendservice", "friendlookup")
+
+        mockDnsResolver.expectMsg(Dns.Resolve("_friendlookup._friendservice-chirper._tcp.marathon.mesos"))
+        mockDnsResolver.reply(AsyncDnsResolver.SrvResolved("_friendlookup._friendlookup-chirper._tcp.marathon.mesos", Seq(
+          SRVRecord("_friendlookup._friendservice-chirper._tcp.marathon.mesos", 100, 1, 1, 4568, "host1.domain"))))
+
+        mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
+        mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
+
+        inside(result.futureValue) {
+          case Vector(s: Service) =>
+            s.hostname shouldBe "host1.domain"
+            s.uri.getScheme shouldBe "tcp"
+            s.uri.getUserInfo shouldBe null
+            s.uri.getHost shouldBe "10.0.12.5"
+            s.uri.getPort shouldBe 4568
+            s.uri.getPath shouldBe ""
+            s.uri.getQuery shouldBe null
+            s.uri.getFragment shouldBe null
+        }
+      }
+
+      "ServiceLocator.translateName" should {
+        "translate name with namespace + name + endpoint" in {
+          val serviceLocator = createServiceLocator(Mesos)
+          val result = serviceLocator.translateName(Some("chirper"), "friendservice", "api")
+          result shouldBe "_api._friendservice-chirper._tcp.marathon.mesos"
+        }
+
+        "translate name with namespace from env + name + endpoint" in {
+          val serviceLocator = createServiceLocator(Mesos, Map("RP_NAMESPACE" -> "cake"))
+          val result = serviceLocator.translateName(namespace = None, "friendservice", "api")
+          result shouldBe "_api._friendservice-cake._tcp.marathon.mesos"
+        }
+
+        "translate name with default namespace + name + endpoint" in {
+          val serviceLocator = createServiceLocator(Mesos)
+          val result = serviceLocator.translateName(namespace = None, "friendservice", "api")
+          result shouldBe "_api._friendservice._tcp.marathon.mesos"
+        }
+
+        "not translate name containing DNS character" in {
+          val serviceLocator = createServiceLocator(Mesos)
+          val result = serviceLocator.translateName(namespace = None, "_native._tcp.cassandra.default.svc.cluster.local", "")
+          result shouldBe "_native._tcp.cassandra.default.svc.cluster.local"
+        }
       }
     }
   }
 
-  "ServiceLocator.translateName" should {
-    "translate name with namespace + name + endpoint" in {
-      val serviceLocator = createServiceLocator()
-      val result = serviceLocator.translateName(Some("chirper"), "friendservice", "api")
-      result shouldBe "_api._tcp.friendservice.chirper.svc.cluster.local"
-    }
-
-    "translate name with namespace from env + name + endpoint" in {
-      val serviceLocator = createServiceLocator(Map("RP_NAMESPACE" -> "cake"))
-      val result = serviceLocator.translateName(namespace = None, "friendservice", "api")
-      result shouldBe "_api._tcp.friendservice.cake.svc.cluster.local"
-    }
-
-    "translate name with default namespace + name + endpoint" in {
-      val serviceLocator = createServiceLocator()
-      val result = serviceLocator.translateName(namespace = None, "friendservice", "api")
-      result shouldBe "_api._tcp.friendservice.default.svc.cluster.local"
-    }
-
-    "not translate name containing DNS character" in {
-      val serviceLocator = createServiceLocator()
-      val result = serviceLocator.translateName(namespace = None, "_native._tcp.cassandra.default.svc.cluster.local", "")
-      result shouldBe "_native._tcp.cassandra.default.svc.cluster.local"
-
-    }
-  }
-
-  private def createServiceLocator(testEnv: Map[String, String] = Map.empty, mockDnsResolver: Option[ActorRef] = None): ServiceLocatorLike =
+  private def createServiceLocator(platform: Platform, testEnv: Map[String, String] = Map.empty, mockDnsResolver: Option[ActorRef] = None): ServiceLocatorLike =
     new ServiceLocatorLike {
       def dnsResolver(implicit as: ActorSystem): ActorRef =
         mockDnsResolver.getOrElse {
@@ -189,7 +244,8 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
         }
 
       def env: Map[String, String] = testEnv
-      override def targetRuntime: Option[Platform] = Some(Kubernetes)
+
+      override def targetRuntime: Option[Platform] = Some(platform)
     }
 
 }

@@ -20,11 +20,14 @@ sealed trait Platform
 
 case object Kubernetes extends Platform
 
+case object Mesos extends Platform
+
 object Platform {
   lazy val active: Option[Platform] = decode(sys.env.get("RP_PLATFORM"))
 
   private[rp] def decode(platform: Option[String]) = platform match {
     case Some("kubernetes") => Some(Kubernetes)
+    case Some("mesos") => Some(Mesos)
     case _ => None
   }
 }
