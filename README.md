@@ -1,15 +1,60 @@
 # reactive-lib
 
-[![GitHub version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/lightbend/reactive-lib/releases)
+[![GitHub version](https://img.shields.io/badge/version-0.6.0-blue.svg)](https://github.com/lightbend/reactive-lib/releases)
 [![Build Status](https://api.travis-ci.org/lightbend/reactive-lib.png?branch=master)](https://travis-ci.org/lightbend/reactive-lib)
 
 This project is a component of [Lightbend Orchestration for Kubernetes](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/). Refer to its documentation for usage, examples, and reference information.
 
 ## Usage
 
-This project is included in your application by [sbt-reactive-app](https://github.com/lightbend/sbt-reactive-app). Consult
+### Kubernetes
+
+`reactive-lib` is included in your application by [sbt-reactive-app](https://github.com/lightbend/sbt-reactive-app). Consult
 [Lightbend Orchestration for Kubernetes](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/) documentation
 for setup and configuration.
+
+### DC/OS
+
+If you're using DC/OS, you can use some of the functionality of `reactive-lib`, notably its service locator for Akka and Lagom.
+
+#### Akka
+
+```sbt
+"com.lightbend.rp" %% "reactive-lib-service-discovery" % "<version>"
+```
+
+#### Lagom 1.4
+
+```sbt
+"com.lightbend.rp" %% "reactive-lib-service-discovery-lagom14-java" % "<version>"
+```
+
+##### Java
+
+```hocon
+// In `application.conf`
+
+play.modules.enabled += "com.lightbend.rp.servicediscovery.lagom.javadsl.ServiceLocatorModule"
+```
+
+##### Scala
+
+```scala
+// In your application loader
+
+import com.lightbend.rp.servicediscovery.lagom.scaladsl.LagomServiceLocatorComponents
+
+...
+
+class LagomLoader extends LagomApplicationLoader {
+  override def load(context: LagomApplicationContext) = 
+    new MyLagomApplication(context) with LagomServiceLocatorComponents
+
+  ...
+}
+
+...
+```
 
 ## Maintenance
 
