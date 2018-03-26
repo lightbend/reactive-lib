@@ -19,7 +19,7 @@ package com.lightbend.rp.servicediscovery.scaladsl
 import akka.actor._
 import akka.io.Dns.Resolved
 import akka.io.{ Dns, IO }
-import akka.pattern.ask
+import akka.pattern.{ after, ask }
 import com.lightbend.rp.asyncdns.AsyncDnsResolver
 import com.lightbend.rp.asyncdns.raw.SRVRecord
 import com.lightbend.rp.common._
@@ -27,7 +27,8 @@ import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocatorLike.{ AddressSe
 import java.net.URI
 import java.util.concurrent.ThreadLocalRandom
 import scala.collection.immutable.Seq
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.FiniteDuration
 
 import AsyncDnsResolver.SrvResolved
 
@@ -226,6 +227,12 @@ trait ServiceLocatorLike {
       else
         s"$name/$endpoint"
 
+    def retry[T](delays: Seq[FiniteDuration])(value: => Future[T]): Future[T] =
+      value
+        .recoverWith {
+          case _ if delays.nonEmpty => after(delays.head, as.scheduler)(retry(delays.tail)(value))
+        }
+
     settings.externalServiceAddresses.get(externalEntry) match {
       case Some(services) =>
         val resolved =
@@ -264,8 +271,7 @@ trait ServiceLocatorLike {
                       for {
                         srvRecord <- srvRecords
                       } yield {
-                        dnsResolver
-                          .ask(Dns.Resolve(srvRecord.target))(settings.askTimeout)
+                        retry(settings.retryDelays)(dnsResolver.ask(Dns.Resolve(srvRecord.target))(settings.askTimeout))
                           .collect {
                             case aRecord: Resolved =>
                               translateResolvedSrv(protocol, srvRecord, aRecord)

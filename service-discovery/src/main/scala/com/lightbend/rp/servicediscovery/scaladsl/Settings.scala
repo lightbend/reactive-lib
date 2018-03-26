@@ -41,6 +41,13 @@ final class Settings(system: ExtendedActorSystem) extends Extension {
 
   val externalServiceAddressLimit: Int = serviceDiscovery.getInt("external-service-address-limit")
 
+  val retryDelays: Seq[FiniteDuration] =
+    serviceDiscovery
+      .getDurationList("retry-delays", MILLISECONDS)
+      .asScala
+      .toVector
+      .map(Duration(_, MILLISECONDS))
+
   private def duration(config: Config, key: String): FiniteDuration =
     Duration(config.getDuration(key, MILLISECONDS), MILLISECONDS)
 }
