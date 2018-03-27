@@ -1,6 +1,5 @@
 # reactive-lib
 
-[![GitHub version](https://img.shields.io/badge/version-0.6.0-blue.svg)](https://github.com/lightbend/reactive-lib/releases)
 [![Build Status](https://api.travis-ci.org/lightbend/reactive-lib.png?branch=master)](https://travis-ci.org/lightbend/reactive-lib)
 
 This project is a component of [Lightbend Orchestration for Kubernetes](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/). Refer to its documentation for usage, examples, and reference information.
