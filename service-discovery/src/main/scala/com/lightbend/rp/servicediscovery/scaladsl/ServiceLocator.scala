@@ -100,11 +100,12 @@ trait ServiceLocatorLike {
           name
         } else {
           val serviceNamespace = namespace.orElse(namespaceFromEnv()).getOrElse(kubernetes.DefaultNamespace)
+          val clusterSuffix = suffixFromEnv().getOrElse(kubernetes.DefaultSuffix)
           val serviceName = endpointServiceName(name)
           val endpointName = endpointServiceName(endpoint)
 
           // @TODO hardcoded _tcp
-          s"_$endpointName._tcp.$serviceName.$serviceNamespace.svc.cluster.local"
+          s"_$endpointName._tcp.$serviceName.$serviceNamespace.svc.$clusterSuffix"
         }
 
       case Some(Mesos) =>
@@ -293,6 +294,10 @@ trait ServiceLocatorLike {
 
   protected def namespaceFromEnv(): Option[String] =
     env.get("RP_NAMESPACE")
+
+  protected def suffixFromEnv(): Option[String] = {
+    env.get("RP_KUBERNETES_CLUSTER_SUFFIX")
+  }
 
   private def endpointServiceName(name: String): String =
     name

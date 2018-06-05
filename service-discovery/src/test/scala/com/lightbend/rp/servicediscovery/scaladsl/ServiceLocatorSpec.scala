@@ -167,6 +167,12 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
           result shouldBe "_api._tcp.friendservice.cake.svc.cluster.local"
         }
 
+        "translate name with namespace from env + name + endpoint + suffix" in {
+          val serviceLocator = createServiceLocator(Kubernetes, Map("RP_NAMESPACE" -> "cake", "RP_KUBERNETES_CLUSTER_SUFFIX" -> "new.kube"))
+          val result = serviceLocator.translateName(namespace = None, "friendservice", "api")
+          result shouldBe "_api._tcp.friendservice.cake.svc.new.kube"
+        }
+
         "translate name with default namespace + name + endpoint" in {
           val serviceLocator = createServiceLocator(Kubernetes)
           val result = serviceLocator.translateName(namespace = None, "friendservice", "api")

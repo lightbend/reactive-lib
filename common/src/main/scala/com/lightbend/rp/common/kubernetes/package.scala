@@ -18,4 +18,5 @@ package com.lightbend.rp.common
 
 package object kubernetes {
   val DefaultNamespace: String = "default"
+  val DefaultSuffix: String = "cluster.local"
 }
