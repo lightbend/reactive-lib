@@ -55,6 +55,10 @@ class LagomLoader extends LagomApplicationLoader {
 ...
 ```
 
+## Releasing
+
+Consult the _Lightbend Orchestration Release Process_ document in Google Drive.
+
 ## Maintenance
 
 Enterprise Suite Platform Team <es-platform@lightbend.com>
