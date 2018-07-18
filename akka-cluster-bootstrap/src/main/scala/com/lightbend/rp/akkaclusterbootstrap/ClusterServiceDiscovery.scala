@@ -17,7 +17,7 @@
 package com.lightbend.rp.akkaclusterbootstrap
 
 import akka.actor.ActorSystem
-import akka.discovery.{ ServiceDiscovery, SimpleServiceDiscovery }
+import akka.discovery.{ Lookup, ServiceDiscovery, SimpleServiceDiscovery }
 import akka.discovery.SimpleServiceDiscovery.{ Resolved, ResolvedTarget }
 import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocator
 
@@ -28,12 +28,12 @@ class ClusterServiceDiscovery(system: ActorSystem) extends SimpleServiceDiscover
   import ServiceDiscovery._
   import system.dispatcher
 
-  def lookup(name: String, resolveTimeout: FiniteDuration): Future[Resolved] = {
+  def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
     ServiceLocator
-      .lookup(name, AkkaManagementPortName)(system)
+      .lookup(lookup.serviceName, AkkaManagementPortName)(system)
       .map(services =>
         Resolved(
-          name,
+          lookup.serviceName,
           services
             .filter(s => s.uri.getHost != null && s.uri.getPort > 0)
             .map(s => ResolvedTarget(s.uri.getHost, Some(s.uri.getPort)))))
