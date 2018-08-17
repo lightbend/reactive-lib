@@ -23,15 +23,22 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 class ClusterStatusCheck extends ReadinessCheck with HealthCheck {
   def healthy(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[Boolean] =
-    isUp(actorSystem)
+    status(actorSystem) map {
+      case MemberStatus.Joining  => true
+      case MemberStatus.WeaklyUp => true
+      case MemberStatus.Up       => true
+      case MemberStatus.Leaving  => false
+      case MemberStatus.Exiting  => false
+      case MemberStatus.Down     => false
+      case MemberStatus.Removed  => false
+    }
 
   def ready(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[Boolean] =
-    isUp(actorSystem)
+    status(actorSystem) map (_ == MemberStatus.Up)
 
-  private def isUp(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[Boolean] = {
+  private def status(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[MemberStatus] = {
     val cluster = Cluster(actorSystem)
     val selfNow = cluster.selfMember
-
-    Future.successful(selfNow.status == MemberStatus.Up)
+    Future.successful(selfNow.status)
   }
 }
