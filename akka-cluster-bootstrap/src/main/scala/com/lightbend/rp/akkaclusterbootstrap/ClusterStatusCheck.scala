@@ -29,7 +29,7 @@ class ClusterStatusCheck extends ReadinessCheck with HealthCheck {
       case MemberStatus.Up       => true
       case MemberStatus.Leaving  => true
       case MemberStatus.Exiting  => true
-      case MemberStatus.Down     => true
+      case MemberStatus.Down     => false
       case MemberStatus.Removed  => false
     }
 
