@@ -34,7 +34,15 @@ class ClusterStatusCheck extends ReadinessCheck with HealthCheck {
     }
 
   def ready(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[Boolean] =
-    status(actorSystem) map (_ == MemberStatus.Up)
+    status(actorSystem) map {
+      case MemberStatus.Joining  => false
+      case MemberStatus.WeaklyUp => true
+      case MemberStatus.Up       => true
+      case MemberStatus.Leaving  => false
+      case MemberStatus.Exiting  => false
+      case MemberStatus.Down     => false
+      case MemberStatus.Removed  => false
+    }
 
   private def status(actorSystem: ExtendedActorSystem)(implicit ec: ExecutionContext): Future[MemberStatus] = {
     val cluster = Cluster(actorSystem)
