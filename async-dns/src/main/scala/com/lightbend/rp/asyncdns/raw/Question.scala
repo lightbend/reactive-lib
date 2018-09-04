@@ -15,10 +15,14 @@ case class Question(name: String, qType: RecordType.Value, qClass: RecordClass.V
 }
 
 object Question {
-  def parse(it: ByteIterator, msg: ByteString): Question = {
+  def parse(it: ByteIterator, msg: ByteString): Option[Question] = {
+    // don't use for comprehension yet because we need to read all the bytes
     val name = DomainName.parse(it, msg)
     val qType = RecordType.parse(it)
     val qClass = RecordClass.parse(it)
-    Question(name, qType, qClass)
+    for {
+      t <- qType
+      c <- qClass
+    } yield Question(name, t, c)
   }
 }

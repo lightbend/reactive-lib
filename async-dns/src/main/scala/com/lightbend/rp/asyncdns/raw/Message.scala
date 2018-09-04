@@ -106,7 +106,7 @@ object Message {
     val nsCount = it.getShort
     val arCount = it.getShort
 
-    val qs = (0 until qdCount) map { i => Question.parse(it, msg) }
+    val qs = (0 until qdCount).toList flatMap { i => Question.parse(it, msg).toList }
     val ans = (0 until anCount) map { i => ResourceRecord.parse(it, msg) }
     val nss = (0 until nsCount) map { i => ResourceRecord.parse(it, msg) }
     val ars = (0 until arCount) map { i => ResourceRecord.parse(it, msg) }
