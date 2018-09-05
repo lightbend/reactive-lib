@@ -5,6 +5,7 @@
 package com.lightbend.rp.asyncdns.raw
 
 import akka.util.{ ByteIterator, ByteStringBuilder }
+import java.util.NoSuchElementException
 
 object RecordClass extends Enumeration {
   val IN = Value(1)
@@ -14,9 +15,12 @@ object RecordClass extends Enumeration {
 
   val WILDCARD = Value(255)
 
-  def parse(it: ByteIterator): Value = {
-    RecordClass(it.getShort)
-  }
+  def parse(it: ByteIterator): Option[Value] =
+    try {
+      Option(RecordClass(it.getShort))
+    } catch {
+      case _: NoSuchElementException => None
+    }
 
   def write(out: ByteStringBuilder, c: Value): Unit = {
     out.putShort(c.id)
