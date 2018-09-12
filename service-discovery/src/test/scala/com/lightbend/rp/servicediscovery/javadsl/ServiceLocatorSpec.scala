@@ -22,7 +22,7 @@ import com.lightbend.rp.servicediscovery.scaladsl.{ Service, Settings }
 import com.typesafe.config.ConfigFactory
 import java.net.URI
 import java.util.Optional
-import org.scalatest.{ AsyncWordSpecLike, BeforeAndAfterAll, Matchers }
+import org.scalatest.{ AsyncFunSuiteLike, BeforeAndAfterAll, DiagrammedAssertions }
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 
@@ -41,8 +41,8 @@ object ServiceLocatorSpec {
 
 class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceLocatorSpec.config))
   with ImplicitSender
-  with AsyncWordSpecLike
-  with Matchers
+  with AsyncFunSuiteLike
+  with DiagrammedAssertions
   with BeforeAndAfterAll {
 
   override def afterAll {
@@ -51,26 +51,24 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
   implicit val settings = Settings(system)
 
-  "addressSelectionFirst" should {
-    "work for empty lists" in {
-      ServiceLocator.addressSelectionFirst.select(Seq().asJava) shouldBe Optional.empty[URI]()
-    }
-
-    "work for non-empty lists" in {
-      ServiceLocator.addressSelectionFirst.select(
-        Seq(
-          Service("myservice.com", new URI("http://127.0.0.1:9000")),
-          Service("myotherservice.com", new URI("http://127.0.0.1:9001"))).asJava).get() shouldBe Service("myservice.com", new URI("http://127.0.0.1:9000"))
-    }
+  test("addressSelectionFirst should work for empty lists") {
+    assert(ServiceLocator.addressSelectionFirst.select(Seq().asJava) ===
+      Optional.empty[URI]())
   }
 
-  "addressSelectionRandom" should {
-    "work for empty lists" in {
-      ServiceLocator.addressSelectionFirst.select(Seq().asJava) shouldBe Optional.empty[URI]()
-    }
+  test("addressSelectionFirst should work for non-empty lists") {
+    assert(ServiceLocator.addressSelectionFirst.select(
+      Seq(
+        Service("myservice.com", new URI("http://127.0.0.1:9000")),
+        Service("myotherservice.com", new URI("http://127.0.0.1:9001"))).asJava).get() ===
+      Service("myservice.com", new URI("http://127.0.0.1:9000")))
+  }
 
-    "work for non-empty lists" in {
-      ServiceLocator.addressSelectionFirst.select(Seq(Service("hello", new URI("http://127.0.0.1:9000"))).asJava).isPresent shouldBe true
-    }
+  test("addressSelectionRandom should work for empty lists") {
+    assert(ServiceLocator.addressSelectionFirst.select(Seq().asJava) === Optional.empty[URI]())
+  }
+
+  test("addressSelectionRandom should work for non-empty lists") {
+    assert(ServiceLocator.addressSelectionFirst.select(Seq(Service("hello", new URI("http://127.0.0.1:9000"))).asJava).isPresent)
   }
 }
