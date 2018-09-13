@@ -60,7 +60,6 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
   with Inside {
 
   import ServiceLocatorLike.{ AddressSelectionFirst, AddressSelectionRandom }
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)
