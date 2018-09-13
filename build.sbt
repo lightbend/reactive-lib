@@ -8,12 +8,22 @@ lazy val Versions = new {
   val lagom14                   = "1.4.0"
   val play25                    = "2.5.0"
   val play26                    = "2.6.0"
-  val scala211                  = "2.11.11"
-  val scala212                  = "2.12.3"
+  val scala211                  = "2.11.12"
+  val scala212                  = "2.12.6"
   val scalaJava8Compat          = "0.8.0"
   val scalaTest                 = "3.0.1"
   val typesafeConfig            = "1.3.1"
 }
+
+ThisBuild / organization := "com.lightbend.rp"
+ThisBuild / organizationName := "Lightbend, Inc."
+ThisBuild / startYear := Option(2017)
+ThisBuild / licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
+ThisBuild / homepage := Option(url("https://www.lightbend.com/"))
+ThisBuild / developers := List(
+  Developer("lightbend", "Lightbend Contributors", "", url("https://github.com/lightbend/reactive-lib"))
+)
+ThisBuild / scmInfo := Option(ScmInfo(url("https://github.com/lightbend/reactive-lib"), "git@github.com:lightbend/reactive-lib.git"))
 
 def semanticVersioningMajor(version: String) =
   version
@@ -30,21 +40,12 @@ def createProject(id: String, path: String, headers: Boolean = true) =
       Project(id, file(path)))
   .settings(
     name := id,
-    organization := "com.lightbend.rp",
-    organizationName := "Lightbend, Inc.",
-    startYear := Some(2017),
-    licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     scalaVersion := Versions.scala211,
     scalacOptions ++= Vector("-deprecation"),
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % Versions.scalaTest % "test"
     ),
-    homepage := Some(url("https://www.lightbend.com/")),
-    developers := List(
-      Developer("lightbend", "Lightbend Contributors", "", url("https://github.com/lightbend/reactive-lib"))
-    ),
     sonatypeProfileName := "com.lightbend.rp",
-    scmInfo := Some(ScmInfo(url("https://github.com/lightbend/reactive-lib"), "git@github.com:lightbend/reactive-lib.git")),
     scalaVersion := Versions.scala211,
     publishTo := Some(
       if (isSnapshot.value)
@@ -81,6 +82,9 @@ lazy val root = createProject("reactive-lib", ".")
     serviceDiscoveryLagom14Java,
     serviceDiscoveryLagom14Scala,
     status
+  ).
+  settings(
+    crossScalaVersions := Vector()
   )
 
 lazy val common = createProject("reactive-lib-common", "common")
