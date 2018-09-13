@@ -126,6 +126,8 @@ trait ServiceLocatorLike {
 
   def translateProtocol(endpoint: String, srvName: String): Option[String] =
     targetRuntime match {
+      case _ if endpoint == "" => Option.empty
+
       case Some(Kubernetes) =>
         Option(srvName.split('.'))
           .filter(_.length >= 2)
@@ -163,11 +165,10 @@ trait ServiceLocatorLike {
     targetRuntime match {
       case Some(Kubernetes | Mesos) =>
         val uris =
-          addressARecord.ipv4.map(v4 => new URI(protocol.orNull, null, v4.getHostAddress, 0, null, null, null)) ++
-            addressARecord.ipv6.map(v6 => new URI(protocol.orNull, null, v6.getHostAddress, 0, null, null, null))
+          addressARecord.ipv4.map(v4 => new URI(protocol.orNull, v4.getHostAddress, null, null)) ++
+            addressARecord.ipv6.map(v6 => new URI(protocol.orNull, v6.getHostAddress, null, null))
 
         uris.map(u => Service(hostname, u))
-
       case None =>
         Seq.empty
     }
@@ -284,7 +285,7 @@ trait ServiceLocatorLike {
                       .map(_.flatten.toVector)
 
                   case r: Resolved =>
-                    Future.successful(translateResolved(translateProtocol(endpoint, r.name), r.name, r))
+                    Future.successful(translateResolved(translateProtocol(endpoint, r.name), name, r))
 
                 }
             } yield result

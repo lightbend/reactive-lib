@@ -153,6 +153,27 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
     }
   }
 
+  test("In Kubernetes, ServiceLocator should perform A record resolution when the name doesn't start with underscore") {
+    val mockDnsResolver = TestProbe()
+    val serviceLocator = createServiceLocator(Kubernetes, mockDnsResolver = Some(mockDnsResolver.ref))
+    val result = serviceLocator.lookup("host1.domain")
+
+    mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
+    mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
+
+    inside(result.futureValue) {
+      case Vector(s: Service) =>
+        assert(s.hostname === "host1.domain")
+        assert(Option(s.uri.getScheme) === None)
+        assert(Option(s.uri.getUserInfo) === None)
+        assert(s.uri.getHost === "10.0.12.5")
+        assert(s.uri.getPort === -1)
+        assert(s.uri.getPath === "")
+        assert(Option(s.uri.getQuery) === None)
+        assert(Option(s.uri.getFragment) === None)
+    }
+  }
+
   test("In Kubernetes, ServiceLocator.translateName should translate name with namespace + name + endpoint") {
     val serviceLocator = createServiceLocator(Kubernetes)
     val result = serviceLocator.translateName(Some("chirper"), "friendservice", "api")
