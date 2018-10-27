@@ -36,8 +36,8 @@ case class ServiceLocator(as: ActorSystem) {
   def lookupOne(namespace: String, name: String, endpoint: String): Future[Option[Service]] =
     ServiceLocator.lookupOne(namespace, name, endpoint)(as)
 
-  def lookupOne(namespace: String, name: String): Future[Option[Service]] =
-    ServiceLocator.lookupOne(namespace, name)(as)
+  def lookupOne(name: String, endpoint: String): Future[Option[Service]] =
+    ServiceLocator.lookupOne(name, endpoint)(as)
 
   def lookupOne(name: String): Future[Option[Service]] =
     ServiceLocator.lookupOne(name)(as)
