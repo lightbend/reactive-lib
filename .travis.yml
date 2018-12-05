@@ -7,18 +7,18 @@ apt:
 language: scala
 jdk: openjdk8
 
-env:
-  - CHANGE_MINIKUBE_NONE_USER=true # This moves Kubernetes specific config files.
-
 before_install:
   - PATH=$(echo "$PATH" | sed -e 's/:\/usr\/local\/lib\/jvm\/openjdk11\/bin//')
   - JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
 
-install:
-  - script/install-minikube.sh
-
-script:
-  - sbt +test publishLocal integrationTest/scripted
+matrix:
+  include:
+    - script: sbt +test
+    - env:
+        - CHANGE_MINIKUBE_NONE_USER=true # This moves Kubernetes specific config files.
+      install:
+        - script/install-minikube.sh
+      script: sbt publishLocal integrationTest/scripted
 
 before_cache:
   # Ensure changes to the cache aren't persisted
