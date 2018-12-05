@@ -1,15 +1,31 @@
-language: scala
-jdk:
-  - oraclejdk8
 sudo: required
-cache:
-  directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt/launchers
+dist: xenial
+apt:
+  packages:
+    - openjdk8
+
+language: scala
+jdk: openjdk8
+
+env:
+  - CHANGE_MINIKUBE_NONE_USER=true # This moves Kubernetes specific config files.
+
+before_install:
+  - PATH=$(echo "$PATH" | sed -e 's/:\/usr\/local\/lib\/jvm\/openjdk11\/bin//')
+  - JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+
+install:
+  - script/install-minikube.sh
+
+script:
+  - sbt +test publishLocal integrationTest/scripted
+
 before_cache:
   # Ensure changes to the cache aren't persisted
   - rm -rf $HOME/.ivy2/cache/com/lightbend/rp/sbtreactiveapp
   # Delete all ivydata files since ivy touches them on each build
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" | xargs rm
-script:
-  - sbt +test
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/launchers

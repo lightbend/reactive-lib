@@ -1,0 +1,174 @@
+---
+apiVersion: "apps/v1beta2"
+kind: Deployment
+metadata:
+  name: "bootstrap-kapi-demo-v0-1-0"
+  labels:
+    appName: "bootstrap-kapi-demo"
+    appNameVersion: "bootstrap-kapi-demo-v0-1-0"
+    actorSystemName: hoboken1
+  namespace: reactivelibtest1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      appNameVersion: "bootstrap-kapi-demo-v0-1-0"
+  template:
+    metadata:
+      labels:
+        appName: "bootstrap-kapi-demo"
+        appNameVersion: "bootstrap-kapi-demo-v0-1-0"
+        actorSystemName: hoboken1
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: "bootstrap-kapi-demo"
+          image: "bootstrap-kapi-demo:0.1.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: "RP_APP_NAME"
+              value: "bootstrap-kapi-demo"
+            - name: "RP_APP_TYPE"
+              value: basic
+            - name: "RP_APP_VERSION"
+              value: "0.1.0"
+            - name: "RP_DYN_JAVA_OPTS"
+              value: "-Dakka.discovery.kubernetes-api.pod-namespace=$RP_NAMESPACE"
+            - name: "RP_ENDPOINTS"
+              value: "AKKA_REMOTE,AKKA_MGMT_HTTP"
+            - name: "RP_ENDPOINTS_COUNT"
+              value: "2"
+            - name: "RP_ENDPOINT_0_BIND_HOST"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_ENDPOINT_0_BIND_PORT"
+              value: "10000"
+            - name: "RP_ENDPOINT_0_HOST"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_ENDPOINT_0_PORT"
+              value: "10000"
+            - name: "RP_ENDPOINT_1_BIND_HOST"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_ENDPOINT_1_BIND_PORT"
+              value: "10001"
+            - name: "RP_ENDPOINT_1_HOST"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_ENDPOINT_1_PORT"
+              value: "10001"
+            - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_BIND_HOST"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_BIND_PORT"
+              value: "10001"
+            - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_HOST"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_PORT"
+              value: "10001"
+            - name: "RP_ENDPOINT_AKKA_REMOTE_BIND_HOST"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_ENDPOINT_AKKA_REMOTE_BIND_PORT"
+              value: "10000"
+            - name: "RP_ENDPOINT_AKKA_REMOTE_HOST"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_ENDPOINT_AKKA_REMOTE_PORT"
+              value: "10000"
+            - name: "RP_JAVA_OPTS"
+              value: "-Dconfig.resource=rp-application.conf -Dakka.discovery.method=kubernetes-api -Dakka.management.cluster.bootstrap.contact-point-discovery.effective-name=bootstrap-kapi-demo -Dakka.management.cluster.bootstrap.contact-point-discovery.required-contact-point-nr=2 -Dakka.discovery.kubernetes-api.pod-label-selector=actorSystemName=hoboken1"
+            - name: "RP_KUBERNETES_POD_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_KUBERNETES_POD_NAME"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "metadata.name"
+            - name: "RP_MODULES"
+              value: "akka-cluster-bootstrapping,akka-management,common,service-discovery,status"
+            - name: "RP_NAMESPACE"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "metadata.namespace"
+            - name: "RP_PLATFORM"
+              value: kubernetes
+          ports:
+            - containerPort: 10000
+              name: "akka-remote"
+            - containerPort: 10001
+              name: "akka-mgmt-http"
+          volumeMounts: []
+          command:
+            - "/rp-start"
+          args:
+            - "bin/bootstrap-kapi-demo"
+          readinessProbe:
+            httpGet:
+              path: "/platform-tooling/ready"
+              port: "akka-mgmt-http"
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/platform-tooling/healthy"
+              port: "akka-mgmt-http"
+            periodSeconds: 10
+            initialDelaySeconds: 60
+      volumes: []
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    appName: "bootstrap-kapi-demo"
+  name: "bootstrap-kapi-demo"
+  namespace: reactivelibtest1
+spec:
+  ports:
+    - name: "akka-remote"
+      port: 10000
+      protocol: TCP
+      targetPort: 10000
+    - name: "akka-mgmt-http"
+      port: 10001
+      protocol: TCP
+      targetPort: 10001
+  selector:
+    appName: "bootstrap-kapi-demo"
+---
+## added this
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-reader
+  namespace: reactivelibtest1
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+---
+## added this
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: read-pods
+  namespace: reactivelibtest1
+subjects:
+  # Create the default user for the reactivelibtest1 namespace
+- kind: User
+  name: system:serviceaccount:reactivelibtest1:default
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
