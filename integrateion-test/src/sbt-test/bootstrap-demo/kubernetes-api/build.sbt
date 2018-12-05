@@ -11,6 +11,10 @@ ThisBuild / scalaVersion := "2.12.7"
 // This is where we wire the freshly baked reactive-lib
 ThisBuild / reactiveLibVersion := freshReactiveLibVersion
 
+lazy val isOpenShift = {
+  sys.props.get("test.openshift").isDefined
+}
+
 lazy val check = taskKey[Unit]("check")
 
 lazy val root = (project in file("."))
@@ -37,22 +41,47 @@ lazy val root = (project in file("."))
     // this logic was taken from test.sh
     check := {
       val s = streams.value
-      Process("kubectl create namespace reactivelibtest1").!(s.log)
-      Process("kubectl apply -f kubernetes/rp.yml").!(s.log)
-      waitForPods(10, s.log)
-      val p = findPodId(name.value, s.log)
-      checkMemberUp(p, 10, s.log)
-      Process("kubectl delete namespace reactivelibtest1").!(s.log)
+      val nm = name.value
+      val v = version.value
+
+      if (!isOpenShift) {
+        Process(s"$kubectl create namespace reactivelibtest1").!(s.log)
+        Process(s"$kubectl apply -f kubernetes/rbac.yml").!(s.log)
+        Process(s"$kubectl apply -f kubernetes/rp.yml").!(s.log)
+
+        waitForPods(10, s.log)
+        val p = findPodId(nm, s.log)
+        checkMemberUp(p, 10, s.log)
+
+        Process(s"$kubectl delete namespace reactivelibtest1").!(s.log)
+      } else {
+        Process(s"$kubectl apply -f kubernetes/rbac.yml").!(s.log)
+        // work around: /rp-start: line 60: /opt/docker/bin/bootstrap-kapi-demo: Permission denied
+        Process(s"$kubectl adm policy add-scc-to-user anyuid -z default").!(s.log)
+
+        Process(s"docker tag $nm:$v docker-registry-default.centralpark.lightbend.com/reactivelibtest1/$nm:$v").!(s.log)
+        Process(s"docker push docker-registry-default.centralpark.lightbend.com/reactivelibtest1/$nm").!(s.log)
+        s.log.info("applying openshift.yml")
+        Process(s"$kubectl apply -f kubernetes/openshift.yml").!(s.log)
+
+        waitForPods(10, s.log)
+        val p = findPodId(nm, s.log)
+        checkMemberUp(p, 10, s.log)
+      }
     }
   )
 
+def kubectl: String = {
+  if (isOpenShift) "oc"
+  else "kubectl"
+}
 
 def waitForPods(attempt: Int, log: Logger): Unit = {
   if (attempt == 0) sys.error("pods did not get ready in time")
   else {
     log.info("waiting for pods to get ready...")
     val lines = try {
-      Process("kubectl get pods --namespace reactivelibtest1").!!.lines.toList
+      Process(s"$kubectl get pods --namespace reactivelibtest1").!!.lines.toList
     } catch {
       case NonFatal(_) => Nil
     }
@@ -66,7 +95,7 @@ def waitForPods(attempt: Int, log: Logger): Unit = {
 }
 
 def findPodId(nm: String, log: Logger): String = {
-  val lines = Process("kubectl get pods --namespace reactivelibtest1").!!.lines.toList
+  val lines = Process(s"$kubectl get pods --namespace reactivelibtest1").!!.lines.toList
   lines foreach { log.info(_: String) }
   val xs = lines filter { s => s.contains("Running") && s.contains(nm) }
   val firstRow = xs.headOption.getOrElse(sys.error("pods not found!"))
@@ -80,7 +109,7 @@ def checkMemberUp(p: String, attempt: Int, log: Logger): Unit = {
   else {
     log.info("checking for MemberUp logs...")
     val lines = try {
-      Process(s"kubectl logs $p --namespace reactivelibtest1").#|(Process("grep MemberUp")).!!.lines.toList
+      Process(s"$kubectl logs $p --namespace reactivelibtest1").#|(Process("grep MemberUp")).!!.lines.toList
     } catch {
       case NonFatal(_) => Nil
     }
