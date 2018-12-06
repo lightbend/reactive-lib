@@ -24,6 +24,8 @@ ThisBuild / developers := List(
 )
 ThisBuild / scmInfo := Option(ScmInfo(url("https://github.com/lightbend/reactive-lib"), "git@github.com:lightbend/reactive-lib.git"))
 
+ThisBuild / scalaVersion := Versions.scala212
+
 def semanticVersioningMajor(version: String) =
   version
     .reverse
@@ -39,13 +41,11 @@ def createProject(id: String, path: String, headers: Boolean = true) =
       Project(id, file(path)))
   .settings(
     name := id,
-    scalaVersion := Versions.scala211,
     scalacOptions ++= Vector("-deprecation"),
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % Versions.scalaTest % "test"
     ),
     sonatypeProfileName := "com.lightbend.rp",
-    scalaVersion := Versions.scala211,
     publishTo := Some(
       if (isSnapshot.value)
         Opts.resolver.sonatypeSnapshots
@@ -139,6 +139,16 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
       "com.typesafe.akka"             %% "akka-cluster"                      % Versions.akka              % "provided"
     ),
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
+  )
+
+lazy val integrationTest = (project in file("integrateion-test"))
+  .enablePlugins(SbtPlugin)
+  .settings(
+    publish / skip := true,
+    scriptedLaunchOpts := { scriptedLaunchOpts.value ++
+      Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+    },
+    scriptedBufferLog := false
   )
 
 lazy val akkaManagement = createProject("reactive-lib-akka-management", "akka-management")
