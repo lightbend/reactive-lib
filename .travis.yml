@@ -1,31 +1,55 @@
 sudo: required
 dist: xenial
+language: scala
+
+jdk: openjdk8
 apt:
   packages:
     - openjdk8
 
-language: scala
-jdk: openjdk8
+services:
+  - docker
 
 before_install:
   - PATH=$(echo "$PATH" | sed -e 's/:\/usr\/local\/lib\/jvm\/openjdk11\/bin//')
   - JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
 
-matrix:
+jobs:
   include:
-    - script: sbt +test
-    - env:
-        - CHANGE_MINIKUBE_NONE_USER=true # This moves Kubernetes specific config files.
+    - stage: test
+      script: sbt +test
+    - stage: test
+      env:
+        - CHANGE_MINIKUBE_NONE_USER=true
       install:
         - script/install-minikube.sh
       script: sbt publishLocal integrationTest/scripted
+    - stage: openshift-test
+      env:
+        # OC_USERNAME
+        - secure: "silQNc79RuaMXeiDrfgPcqmgYFXAJwOV+JAXiA87OGs7lzd6a/+ksfu13RS6wkHCeD1RcE2A8sMchkvqMYoxtoXqIGYgOwnRen/b9RcZYGg8LZWjpuAqZgDK6gVGdPOM7z4XZXJ/88tek84nSc3hjF9EYsb4c3yXQbseDJFyRU9MLnkqvVDECQRYMfNMdbef9YCL+gF6nj7ozKYVmAUZmaZX8SY/dtfTpx8XpvMCDZl2ljtOHctqsiDt436WW2RmcqBApgccIU6QEAS9lKXiG+yBPAauMu2O8h8oHumyuF3XjFWaYm6ZlJBABujjF22kmYyrmFI/+Rzf5NBZkjH6YyOj6oBVb7atufMenfjd2ZV7C/+jOmG3DTu8suaTpscyUbJKKtfXAVvCDpgR2jJbniTgh0K3gzk1XaWLB2GVaUmpUx6h7qeyKrD3MTpobyvIHU2yR4R+ZOZiMHUsAAYvI0oaTpxXUIFBpHSwlkQ7IIghJKQkEN2hOXQOYepjUTb9U606RS7NG88gIXFgmNS9duq7Hd1LoXj/k1R7PS1DrMAZIQhjadp2NflBUHNwpirieLY94sAr9XVBRoDGO3fYZ8Q32bdytgBQGR4Xm7Ii3Njt/4A9zxabhRezIBYMjHr80TOTDLwV/ftF9FYDHn/MO9pJ5gZMAaDMZuXV3d/qNNE="
+        # OC_PASSWORD
+        - secure: "sqzGxA0Z799aLkx2+dNHL0fDK8xMRBcyJspVww9s66+2rkWqzvU6gUZzRr/JsvJfvXs6q/oFJPeUAtTuBgv5W0++oODAM2696BWkxDBYVgB+ne7rLDehwmpA5OKPyc936ecEGOoSwCfH3+His71fVMmsUza3DGQosuPrC+c0wtiKDlyd4xZTVmDJSnXyy3R4XleoavXfze+llJyxUcVDpQd74t+QzUUv/SM1xtd+DsYmormOtr2AHBfaqpyqtgrXnTaJigGcEkDr/XP7pHN5lHUVl4hLRuoIUQlFkqA1IIiJuq53bIlYRXpLb5TgIqK7sGIYsUh4eSVJzUox/xN2wKMt9JP81aHdnmgB4Kvoit3ye0YMn38gMckZ1Aakf0SQc+tRWDUyc6NtkXou3n6mF00NEvZAzYnuJtBputlvOebrVJzhrSSyYdQuRbVLAwlZGHW8s3Is009p+AL97PNS2sp2gCTWvFmNl3qzVwrixRhhdoPCBIyzzpbfq5ogJZVwO5h6jaUUioI64TzfuxOma7e5AT88encMMCAHmOnkuAcQH1WjmuJ/3n7ohRN9IXFNU+ZmQpnkE+NQocyYVeFoOj4fhEHwnapADZDRVZ0LGyAJdFe1wWoQGcEWC9yfQ08CT7fbKdrvYYOEkQ8eTrr43rkwveYnZhnVYdRWlj6YxcY="
+      install:
+        - script/install-oc.sh
+      before_script:
+        - oc login -u $OC_USERNAME -p $OC_PASSWORD centralpark.lightbend.com > /dev/null
+        - oc new-project reactivelibtest1 || true
+        - export OC_TOKEN=$(oc serviceaccounts get-token default)
+        - echo "$OC_TOKEN" | docker login -u unused --password-stdin docker-registry-default.centralpark.lightbend.com
+        - oc status
+      script: sbt -Dtest.openshift publishLocal integrationTest/scripted
+      aftter_script:
+        - oc delete project reactivelibtest1
+
+stages:
+  - name: openshift-test
+    if: repo = lightbend/reactive-lib
 
 before_cache:
-  # Ensure changes to the cache aren't persisted
   - rm -rf $HOME/.ivy2/cache/com/lightbend/rp/sbtreactiveapp
-  # Delete all ivydata files since ivy touches them on each build
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" | xargs rm
 cache:
   directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt/launchers
+    - "$HOME/.ivy2/cache"
+    - "$HOME/.sbt/launchers"
