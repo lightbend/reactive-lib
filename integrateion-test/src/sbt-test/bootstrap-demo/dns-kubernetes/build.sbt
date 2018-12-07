@@ -56,6 +56,7 @@ lazy val root = (project in file("."))
         } else {
           // work around: /rp-start: line 60: /opt/docker/bin/bootstrap-kapi-demo: Permission denied
           Process(s"$kubectl adm policy add-scc-to-user anyuid -z default").!(s.log)
+          Process(s"$kubectl policy add-role-to-user system:image-builder system:serviceaccount:reactivelibtest1:default").!(s.log)
 
           Process(s"docker tag $nm:$v docker-registry-default.centralpark.lightbend.com/reactivelibtest1/$nm:$v").!(s.log)
           Process(s"docker push docker-registry-default.centralpark.lightbend.com/reactivelibtest1/$nm").!(s.log)
