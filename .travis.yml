@@ -34,7 +34,7 @@ jobs:
         - script/install-oc.sh
       before_script:
         - oc login -u $OC_USERNAME -p $OC_PASSWORD centralpark.lightbend.com > /dev/null
-        - oc new-project reactivelibtest1 || true
+        - oc new-project reactivelibtest1 || oc project reactivelibtest1
         - export OC_TOKEN=$(oc serviceaccounts get-token default)
         - echo "$OC_TOKEN" | docker login -u unused --password-stdin docker-registry-default.centralpark.lightbend.com
         - oc status
