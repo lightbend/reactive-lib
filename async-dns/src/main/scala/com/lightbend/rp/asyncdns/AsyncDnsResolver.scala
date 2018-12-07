@@ -6,6 +6,7 @@ package com.lightbend.rp.asyncdns
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import akka.io._
+import akka.io.dns.CachePolicy
 import com.typesafe.config.Config
 import com.lightbend.rp.asyncdns.raw.{ AAAARecord, ARecord, Answer, CNAMERecord, DnsClient, Question4, Question6, SRVRecord, SrvQuestion }
 import java.io.File
@@ -164,10 +165,11 @@ class AsyncDnsResolver(cache: SimpleDnsCache, config: Config) extends Actor with
 
       requests = requests.find(_._1 == baseId) match {
         case Some((_, CurrentRequest(client, name, Some(ipv4), Some(ipv6), None, recordsTtl, _))) =>
-          val ttl = if (ipv4.isEmpty && ipv6.isEmpty) {
-            negativeTtl
+          val ttl: CachePolicy.CachePolicy = if (ipv4.isEmpty && ipv6.isEmpty) {
+            CachePolicy.Never
           } else {
-            math.min(maxPositiveTtl, math.max(minPositiveTtl, recordsTtl))
+            CachePolicy.Ttl.fromPositive(
+              FiniteDuration(math.min(maxPositiveTtl, math.max(minPositiveTtl, recordsTtl)), TimeUnit.MILLISECONDS))
           }
 
           cache.doPut(Dns.Resolved(name, ipv4, ipv6), ttl)
