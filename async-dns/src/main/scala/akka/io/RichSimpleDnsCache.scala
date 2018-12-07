@@ -17,6 +17,7 @@
 package akka.io
 
 import scala.language.implicitConversions
+import akka.io.dns.CachePolicy._
 
 object RichSimpleDnsCache {
   implicit def enrichedSimpleDnsCache(c: SimpleDnsCache): RichSimpleDnsCache =
@@ -27,5 +28,5 @@ object RichSimpleDnsCache {
  * This class exists to expose `private[io] def put(...)` to AsyncDnsResolver.
  */
 final class RichSimpleDnsCache(val underlying: SimpleDnsCache) extends AnyVal {
-  def doPut(r: Dns.Resolved, ttlMillis: Long): Unit = underlying.put(r, ttlMillis)
+  def doPut(r: Dns.Resolved, ttl: CachePolicy): Unit = underlying.put(r, ttl)
 }
