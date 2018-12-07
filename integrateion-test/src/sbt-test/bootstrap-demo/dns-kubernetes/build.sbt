@@ -1,4 +1,4 @@
-// https://github.com/akka/akka-management/tree/master/bootstrap-demo/kubernetes-api
+// https://github.com/akka/akka-management/tree/master/bootstrap-demo/kubernetes-dns
 
 import Dependencies._
 import scala.sys.process.Process
@@ -20,7 +20,7 @@ lazy val check = taskKey[Unit]("check")
 lazy val root = (project in file("."))
   .enablePlugins(SbtReactiveAppPlugin)
   .settings(
-    name := "bootstrap-kapi-demo",
+    name := "bootstrap-dns-demo",
     scalacOptions ++= Seq(
       "-encoding",
       "UTF-8",
@@ -31,23 +31,14 @@ lazy val root = (project in file("."))
       "-Yno-adapted-args",
     ),
     libraryDependencies ++= Seq(
-      akkaCluster,
-      akkaClusterSharding,
-      akkaClusterTools,
-
-      // Theses are currently introduced by reactive-lib
-      // akkaBootstrap,
-      // akkaServiceDiscoveryK8Api,
-
-      // akkaServiceDiscoveryConfig,
-      // akkaClusterHttp,
-
-      akkaSlj4j,
+      akkaBootstrap, akkaServiceDiscoveryDns, akkaClusterHttp,
+      akkaCluster, akkaClusterSharding, akkaClusterTools, akkaSlj4j,
       logback,
       scalaTest
     ),
     enableAkkaClusterBootstrap := true,
     akkaClusterBootstrapSystemName := "hoboken1",
+
     // this logic was taken from test.sh
     check := {
       val s = streams.value
@@ -57,14 +48,12 @@ lazy val root = (project in file("."))
       try {
         if (!isOpenShift) {
           Process(s"$kubectl create namespace reactivelibtest1").!(s.log)
-          Process(s"$kubectl apply -f kubernetes/rbac.yml").!(s.log)
-          Process(s"$kubectl apply -f kubernetes/rp.yml").!(s.log)
+          Process(s"$kubectl apply -f kubernetes/akka-cluster.yml").!(s.log)
 
           waitForPods(3, 10, s.log)
           val p = findPodId(nm, s.log)
           checkMemberUp(p, 10, s.log)
         } else {
-          Process(s"$kubectl apply -f kubernetes/rbac.yml").!(s.log)
           // work around: /rp-start: line 60: /opt/docker/bin/bootstrap-kapi-demo: Permission denied
           Process(s"$kubectl adm policy add-scc-to-user anyuid -z default").!(s.log)
 
@@ -79,13 +68,13 @@ lazy val root = (project in file("."))
         }
       } finally {
         Process(s"$kubectl delete services,pods,deployment --all --namespace reactivelibtest1").!(s.log)
+        // Process(s"$kubectl delete namespace reactivelibtest1").!(s.log)
         waitForPods(0, 10, s.log)
       }
-
     }
   )
 
-def kubectl: String = {
+  def kubectl: String = {
   if (isOpenShift) "oc"
   else "kubectl"
 }
