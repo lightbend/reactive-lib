@@ -4,7 +4,7 @@ import Dependencies._
 import scala.sys.process.Process
 import scala.util.control.NonFatal
 
-ThisBuild / version      := "0.1.0"
+ThisBuild / version      := "0.1.5"
 ThisBuild / organization := "com.example"
 ThisBuild / scalaVersion := "2.12.7"
 

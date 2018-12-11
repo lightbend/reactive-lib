@@ -30,8 +30,8 @@ spec:
       restartPolicy: Always
       containers:
       - name: "bootstrap-dns-demo"
-        image: "docker-registry-default.centralpark.lightbend.com/reactivelibtest1/bootstrap-dns-demo:0.1.0"
-        imagePullPolicy: IfNotPresent
+        image: "docker-registry-default.centralpark.lightbend.com/reactivelibtest1/bootstrap-dns-demo:0.1.5"
+        imagePullPolicy: Always
 
         env:
           - name: "RP_APP_NAME"

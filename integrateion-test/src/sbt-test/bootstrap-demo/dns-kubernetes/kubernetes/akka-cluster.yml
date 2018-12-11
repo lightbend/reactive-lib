@@ -30,8 +30,8 @@ spec:
       restartPolicy: Always
       containers:
       - name: "bootstrap-dns-demo"
-        image: "bootstrap-dns-demo:0.1.0"
-        imagePullPolicy: IfNotPresent
+        image: "bootstrap-dns-demo:0.1.5"
+        imagePullPolicy: Always
 
         env:
           - name: "RP_APP_NAME"

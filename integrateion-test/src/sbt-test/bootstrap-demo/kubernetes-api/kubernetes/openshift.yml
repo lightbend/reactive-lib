@@ -24,7 +24,7 @@ spec:
       containers:
         - name: "bootstrap-kapi-demo"
           image: "docker-registry-default.centralpark.lightbend.com/reactivelibtest1/bootstrap-kapi-demo:0.1.0"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           env:
             - name: "RP_APP_NAME"
               value: "bootstrap-kapi-demo"
