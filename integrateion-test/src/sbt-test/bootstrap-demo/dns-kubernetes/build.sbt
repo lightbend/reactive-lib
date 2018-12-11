@@ -31,7 +31,7 @@ lazy val root = (project in file("."))
       "-Yno-adapted-args",
     ),
     libraryDependencies ++= Seq(
-      akkaBootstrap, akkaServiceDiscoveryDns, akkaClusterHttp,
+      akkaActor, akkaBootstrap, akkaServiceDiscoveryDns, akkaClusterHttp,
       akkaCluster, akkaClusterSharding, akkaClusterTools, akkaSlj4j,
       logback,
       scalaTest
