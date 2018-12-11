@@ -117,9 +117,20 @@ def checkMemberUp(p: String, attempt: Int, log: Logger): Unit = {
     } catch {
       case NonFatal(_) => Nil
     }
-    lines foreach { log.info(_: String) }
+    lines foreach {
+      log.info(_: String)
+    }
     if (lines.size == 3) ()
     else {
+      if (attempt == 1)
+        (try {
+          Process(s"$kubectl logs $p --namespace reactivelibtest1").!!.lines.toList
+        } catch {
+          case NonFatal(_) => Nil
+        }) foreach {
+          log.info(_: String)
+        }
+      else ()
       Thread.sleep(3000)
       checkMemberUp(p, attempt - 1, log)
     }
