@@ -156,7 +156,7 @@ spec:
     protocol: TCP
     targetPort: 10000
   selector:
-    app: bootstrap-dns-demo
+    appName: bootstrap-dns-demo
   clusterIP: None
   publishNotReadyAddresses: true
 #headless
@@ -176,6 +176,6 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
-    app: "bootstrap-demo-kubernetes-dns"
+    appName: bootstrap-dns-demo
   type: LoadBalancer
 #public
