@@ -2,13 +2,13 @@ import scala.collection.immutable.Seq
 import ReleaseTransformations._
 
 lazy val Versions = new {
-  val akka                      = "2.5.16"
-  val akkaManagement            = "0.18.0"
+  val akka                      = "2.5.18"
+  val akkaManagement            = "0.20.0"
   val lagom14                   = "1.4.0"
   val play25                    = "2.5.0"
   val play26                    = "2.6.0"
   val scala211                  = "2.11.12"
-  val scala212                  = "2.12.6"
+  val scala212                  = "2.12.8"
   val scalaJava8Compat          = "0.8.0"
   val scalaTest                 = "3.0.1"
   val typesafeConfig            = "1.3.1"
