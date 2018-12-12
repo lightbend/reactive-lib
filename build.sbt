@@ -73,7 +73,6 @@ lazy val root = createProject("reactive-lib", ".")
   .aggregate(
     akkaClusterBootstrap,
     akkaManagement,
-    asyncDns,
     common,
     playHttpBinding,
     secrets,
@@ -91,21 +90,12 @@ lazy val common = createProject("reactive-lib-common", "common")
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
-lazy val asyncDns = createProject("reactive-lib-async-dns", "async-dns", headers = false)
+lazy val serviceDiscovery = createProject("reactive-lib-service-discovery", "service-discovery")
   .dependsOn(common)
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor"   % Versions.akka,
-      "com.typesafe.akka" %% "akka-testkit" % Versions.akka % "test",
-    ),
-    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
-  )
-
-lazy val serviceDiscovery = createProject("reactive-lib-service-discovery", "service-discovery")
-  .dependsOn(common, asyncDns)
-  .settings(
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-testkit" % Versions.akka % "test",
+      "com.typesafe.akka" %% "akka-testkit" % Versions.akka % Test,
     ),
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )

@@ -17,11 +17,9 @@
 package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor._
-import akka.io.Dns.Resolved
 import akka.io.{ Dns, IO }
+import akka.io.dns.{ DnsProtocol, SRVRecord, ARecord, AAAARecord }
 import akka.pattern.{ after, ask }
-import com.lightbend.rp.asyncdns.AsyncDnsResolver
-import com.lightbend.rp.asyncdns.raw.SRVRecord
 import com.lightbend.rp.common._
 import com.lightbend.rp.servicediscovery.scaladsl.ServiceLocatorLike.{ AddressSelection, AddressSelectionRandom }
 import java.net.URI
@@ -29,8 +27,6 @@ import java.util.concurrent.ThreadLocalRandom
 import scala.collection.immutable.Seq
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
-
-import AsyncDnsResolver.SrvResolved
 
 case class ServiceLocator(as: ActorSystem) {
   def lookupOne(namespace: String, name: String, endpoint: String): Future[Option[Service]] =
@@ -155,25 +151,29 @@ trait ServiceLocatorLike {
     }
   }
 
-  def translateResolvedSrv(protocol: Option[String], srvRecord: SRVRecord, addressARecord: Dns.Resolved): Seq[Service] =
+  def translateResolvedSrv(protocol: Option[String], srvRecord: SRVRecord, addressARecord: DnsProtocol.Resolved): Seq[Service] =
     targetRuntime match {
       case Some(Kubernetes | Mesos) =>
-        val uris =
-          addressARecord.ipv4.map(v4 => new URI(protocol.orNull, null, v4.getHostAddress, srvRecord.port, null, null, null)) ++
-            addressARecord.ipv6.map(v6 => new URI(protocol.orNull, null, v6.getHostAddress, srvRecord.port, null, null, null))
-
+        val uris = addressARecord.records collect {
+          case r: ARecord =>
+            new URI(protocol.orNull, null, r.ip.getHostAddress, srvRecord.port, null, null, null)
+          case r: AAAARecord =>
+            new URI(protocol.orNull, null, r.ip.getHostAddress, srvRecord.port, null, null, null)
+        }
         uris.map(u => Service(srvRecord.target, u))
       case None =>
         Seq.empty
     }
 
-  def translateResolved(protocol: Option[String], hostname: String, addressARecord: Dns.Resolved): Seq[Service] =
+  def translateResolved(protocol: Option[String], hostname: String, addressARecord: DnsProtocol.Resolved): Seq[Service] =
     targetRuntime match {
       case Some(Kubernetes | Mesos) =>
-        val uris =
-          addressARecord.ipv4.map(v4 => new URI(protocol.orNull, v4.getHostAddress, null, null)) ++
-            addressARecord.ipv6.map(v6 => new URI(protocol.orNull, v6.getHostAddress, null, null))
-
+        val uris = addressARecord.records collect {
+          case r: ARecord =>
+            new URI(protocol.orNull, r.ip.getHostAddress, null, null)
+          case r: AAAARecord =>
+            new URI(protocol.orNull, r.ip.getHostAddress, null, null)
+        }
         uris.map(u => Service(hostname, u))
       case None =>
         Seq.empty
@@ -273,28 +273,27 @@ trait ServiceLocatorLike {
 
             for {
               result <- dnsResolver
-                .ask(Dns.Resolve(nameToLookup))(settings.askTimeout)
+                .ask(DnsProtocol.resolve(nameToLookup, DnsProtocol.Srv))(settings.askTimeout)
                 .flatMap {
-                  case SrvResolved(srvName, srvRecords) =>
+                  case resolved: DnsProtocol.Resolved =>
+                    val srvName = resolved.name
+                    val srvRecords = resolved.records collect {
+                      case r: SRVRecord => r
+                    }
                     val protocol = translateProtocol(endpoint, srvName)
                     val lookups =
                       for {
                         srvRecord <- srvRecords
                       } yield {
-                        retry(settings.retryDelays)(dnsResolver.ask(Dns.Resolve(srvRecord.target))(settings.askTimeout))
+                        retry(settings.retryDelays)(dnsResolver.ask(DnsProtocol.resolve(srvRecord.target, DnsProtocol.Ip(ipv6 = false)))(settings.askTimeout))
                           .collect {
-                            case aRecord: Resolved =>
+                            case aRecord: DnsProtocol.Resolved =>
                               translateResolvedSrv(protocol, srvRecord, aRecord)
                           }
                       }
-
                     Future
                       .sequence(lookups)
                       .map(_.flatten.toVector)
-
-                  case r: Resolved =>
-                    Future.successful(translateResolved(translateProtocol(endpoint, r.name), name, r))
-
                 }
             } yield result
         }

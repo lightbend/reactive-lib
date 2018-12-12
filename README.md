@@ -59,11 +59,6 @@ class LagomLoader extends LagomApplicationLoader {
 
 Enterprise Suite Platform Team <es-platform@lightbend.com>
 
-## Third-party License
-
-This project includes a copy of [akka-dns](https://github.com/ilya-epifanov/akka-dns), Copyright 2014-2016 Ilya Epifanov.
-Refer to the `async-dns` directory for more information.
-
 ## License
 
 Copyright (C) 2017-2018 Lightbend Inc. (https://www.lightbend.com).
