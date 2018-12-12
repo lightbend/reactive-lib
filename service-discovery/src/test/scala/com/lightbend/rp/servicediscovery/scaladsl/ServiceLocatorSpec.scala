@@ -43,6 +43,7 @@ object ServiceLocatorSpec {
           |    "pointer-four" = ["pointer-five"]
           |
           |    "no-pointer-one" = ["tcp://hello"]
+          |    "elastic-search-ext" = ["_http._tcp.elasticsearch.test.svc.cluster.local"]
           |  }
           |
           |  external-service-address-limit = 2
@@ -251,6 +252,31 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
     val serviceLocator = createServiceLocator(Mesos)
     val result = serviceLocator.translateName(namespace = None, "_native._tcp.cassandra.default.svc.cluster.local", "")
     assert(result === "_native._tcp.cassandra.default.svc.cluster.local")
+  }
+
+  test("In Kubernetes, ServiceLocator.lookupOne should cascade to DNS SRV resolution and make an http:// URI") {
+    val mockDnsResolver = TestProbe()
+    val serviceLocator = createServiceLocator(Kubernetes, mockDnsResolver = Some(mockDnsResolver.ref))
+    val result = serviceLocator.lookupOne("elastic-search-ext")
+
+    mockDnsResolver.expectMsg(Dns.Resolve("_http._tcp.elasticsearch.test.svc.cluster.local"))
+    mockDnsResolver.reply(AsyncDnsResolver.SrvResolved("_http._tcp.elasticsearch.default.test.cluster.local", Seq(
+      SRVRecord("_http._tcp.elasticsearch.default.test.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
+
+    mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
+    mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
+
+    inside(result.futureValue) {
+      case Some(s: Service) =>
+        assert(s.hostname === "host1.domain")
+        assert(s.uri.getScheme === "http")
+        assert(s.uri.getUserInfo === null)
+        assert(s.uri.getHost === "10.0.12.5")
+        assert(s.uri.getPort === 4568)
+        assert(s.uri.getPath === "")
+        assert(s.uri.getQuery === null)
+        assert(s.uri.getFragment === null)
+    }
   }
 
   private def createServiceLocator(platform: Platform, testEnv: Map[String, String] = Map.empty, mockDnsResolver: Option[ActorRef] = None): ServiceLocatorLike =
