@@ -31,7 +31,7 @@ spec:
       containers:
       - name: "bootstrap-dns-demo"
         image: "bootstrap-dns-demo:0.1.5"
-        imagePullPolicy: Always
+        imagePullPolicy: Never
 
         env:
           - name: "RP_APP_NAME"

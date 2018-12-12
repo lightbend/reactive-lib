@@ -24,7 +24,7 @@ spec:
       containers:
         - name: "bootstrap-kapi-demo"
           image: "bootstrap-kapi-demo:0.1.0"
-          imagePullPolicy: Always
+          imagePullPolicy: Never
           env:
             - name: "RP_APP_NAME"
               value: "bootstrap-kapi-demo"
