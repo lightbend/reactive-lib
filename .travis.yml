@@ -44,7 +44,7 @@ jobs:
 
 stages:
   - name: openshift-test
-    if: repo = lightbend/reactive-lib
+    if: (repo = lightbend/reactive-lib) AND (fork = false)
 
 before_cache:
   - rm -rf $HOME/.ivy2/cache/com/lightbend/rp/sbtreactiveapp

@@ -124,12 +124,18 @@ trait ServiceLocatorLike {
         name
     }
 
-  def translateProtocol(endpoint: String, srvName: String): Option[String] =
+  def translateProtocol(endpoint0: String, srvName: String): Option[String] = {
+    val dotParts = srvName.split('.').toList
+    // pick up http endpoint from SRV name in case endpoint0 is empty
+    val endpoint =
+      if (endpoint0 == "" && dotParts.contains[String]("_http")) "http"
+      else endpoint0
+
     targetRuntime match {
       case _ if endpoint == "" => Option.empty
 
       case Some(Kubernetes) =>
-        Option(srvName.split('.'))
+        Option(dotParts)
           .filter(_.length >= 2)
           .map(parts => normalizeProtocol(parts(1).dropWhile(_ == '_'), endpoint))
 
@@ -138,8 +144,7 @@ trait ServiceLocatorLike {
         // so the protocol specification may not always be the second entry, sometimes it is the third.
 
         val knownSrvProtocols = Set("_tcp", "_udp")
-        val parts = srvName.split('.')
-        val candidates = Vector(parts.lift(1), parts.lift(2)).flatten
+        val candidates = Vector(dotParts.lift(1), dotParts.lift(2)).flatten
 
         candidates
           .find(knownSrvProtocols.contains)
@@ -148,6 +153,7 @@ trait ServiceLocatorLike {
 
       case _ => Option.empty
     }
+  }
 
   def translateResolvedSrv(protocol: Option[String], srvRecord: SRVRecord, addressARecord: Dns.Resolved): Seq[Service] =
     targetRuntime match {
@@ -219,6 +225,8 @@ trait ServiceLocatorLike {
       protocol
 
   private def doLookup(namespace: Option[String], name: String, endpoint: String, externalChecks: Int)(implicit as: ActorSystem): Future[Seq[Service]] = {
+    as.log.debug(s"looking up namespace = $namespace, name = $name, endpoint = $endpoint, externalChecks = $externalChecks")
+
     val settings = Settings(as)
 
     import as.dispatcher
