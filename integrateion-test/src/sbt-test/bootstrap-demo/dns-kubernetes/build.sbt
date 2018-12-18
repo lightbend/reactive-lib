@@ -8,9 +8,6 @@ ThisBuild / version      := "0.1.5"
 ThisBuild / organization := "com.example"
 ThisBuild / scalaVersion := "2.12.7"
 
-// This is where we wire the freshly baked reactive-lib
-ThisBuild / reactiveLibVersion := freshReactiveLibVersion
-
 lazy val isOpenShift = {
   sys.props.get("test.openshift").isDefined
 }
@@ -30,10 +27,14 @@ lazy val root = (project in file("."))
       "-Xlint",
       "-Yno-adapted-args",
     ),
+    // This is where we wire the freshly baked reactive-lib
+    reactiveLibVersion := freshReactiveLibVersion,
     libraryDependencies ++= Seq(
       akkaManagement,
       akkaClusterHttp,
       akkaCluster,
+      akkaClusterSharding,
+      akkaClusterTools,
       akkaDiscoveryDns,
       akkaSlj4j,
       logback,

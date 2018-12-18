@@ -22,11 +22,11 @@ object ClusterApp {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
-    val cluster = Cluster(system)
 
+    val cluster = Cluster(system)
     system.log.info("Starting Akka Management")
-    AkkaManagement(system).start()
-    ClusterBootstrap(system).start()
+    // AkkaManagement(system).start()
+    // ClusterBootstrap(system).start()
 
     system.actorOf(
       ClusterSingletonManager.props(

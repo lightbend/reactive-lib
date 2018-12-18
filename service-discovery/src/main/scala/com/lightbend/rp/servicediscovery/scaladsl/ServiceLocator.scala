@@ -270,27 +270,27 @@ trait ServiceLocatorLike {
 
           case Some(Kubernetes | Mesos) =>
             val nameToLookup = translateName(namespace, name, endpoint)
+            val queryType =
+              if (nameToLookup.startsWith("_")) DnsProtocol.Srv
+              else DnsProtocol.Ip(ipv6 = false)
 
             for {
               result <- dnsResolver
-                .ask(DnsProtocol.resolve(nameToLookup, DnsProtocol.Srv))(settings.askTimeout)
+                .ask(DnsProtocol.resolve(nameToLookup, queryType))(settings.askTimeout)
                 .flatMap {
                   case resolved: DnsProtocol.Resolved =>
                     val srvName = resolved.name
-                    val srvRecords = resolved.records collect {
-                      case r: SRVRecord => r
-                    }
-                    val protocol = translateProtocol(endpoint, srvName)
-                    val lookups =
-                      for {
-                        srvRecord <- srvRecords
-                      } yield {
+                    lazy val protocol = translateProtocol(endpoint, srvName)
+                    val lookups: Seq[Future[Seq[Service]]] = resolved.records collect {
+                      case srvRecord: SRVRecord =>
                         retry(settings.retryDelays)(dnsResolver.ask(DnsProtocol.resolve(srvRecord.target, DnsProtocol.Ip(ipv6 = false)))(settings.askTimeout))
                           .collect {
                             case aRecord: DnsProtocol.Resolved =>
                               translateResolvedSrv(protocol, srvRecord, aRecord)
                           }
-                      }
+                      case aRecord: ARecord =>
+                        Future.successful(translateResolved(protocol, name, resolved))
+                    }
                     Future
                       .sequence(lookups)
                       .map(_.flatten.toVector)

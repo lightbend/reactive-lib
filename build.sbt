@@ -124,6 +124,7 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
     libraryDependencies ++= Seq(
       "com.lightbend.akka.discovery"  %% "akka-discovery-kubernetes-api"     % Versions.akkaManagement,
       "com.lightbend.akka.discovery"  %% "akka-discovery-marathon-api"       % Versions.akkaManagement,
+      "com.lightbend.akka.discovery"  %% "akka-discovery-dns"                % Versions.akkaManagement,
       "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % Versions.akkaManagement,
       "com.typesafe.akka"             %% "akka-testkit"                      % Versions.akka              % "test",
       "com.typesafe.akka"             %% "akka-cluster"                      % Versions.akka              % "provided"
