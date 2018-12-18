@@ -1,0 +1,181 @@
+---
+apiVersion: "apps/v1beta2"
+kind: Deployment
+metadata:
+  name: "bootstrap-dns-demo-v0-1-0"
+  labels:
+    appName: "bootstrap-dns-demo"
+    appNameVersion: "bootstrap-dns-demo-v0-1-0"
+    actorSystemName: hoboken1
+  namespace: reactivelibtest1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      appNameVersion: "bootstrap-dns-demo-v0-1-0"
+
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+
+  template:
+    metadata:
+      labels:
+        appName: "bootstrap-dns-demo"
+        appNameVersion: "bootstrap-dns-demo-v0-1-0"
+        actorSystemName: hoboken1
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: "bootstrap-dns-demo"
+        image: "docker-registry-default.centralpark.lightbend.com/reactivelibtest1/bootstrap-dns-demo:0.1.5"
+        imagePullPolicy: Always
+
+        env:
+          - name: "RP_APP_NAME"
+            value: "bootstrap-dns-demo"
+          - name: "RP_APP_TYPE"
+            value: basic
+          - name: "RP_APP_VERSION"
+            value: "0.1.0"
+          - name: "RP_DYN_JAVA_OPTS"
+            value: ""
+          - name: "RP_ENDPOINTS"
+            value: "AKKA_REMOTE,AKKA_MGMT_HTTP"
+          - name: "RP_ENDPOINTS_COUNT"
+            value: "2"
+          - name: "RP_ENDPOINT_0_BIND_HOST"
+            valueFrom:
+              fieldRef:
+                fieldPath: "status.podIP"
+          - name: "RP_ENDPOINT_0_BIND_PORT"
+            value: "10000"
+          - name: "RP_ENDPOINT_0_HOST"
+            valueFrom:
+              fieldRef:
+                fieldPath: "status.podIP"
+          - name: "RP_ENDPOINT_0_PORT"
+            value: "10000"
+          - name: "RP_ENDPOINT_1_BIND_HOST"
+            valueFrom:
+              fieldRef:
+                fieldPath: "status.podIP"
+          - name: "RP_ENDPOINT_1_BIND_PORT"
+            value: "10001"
+          - name: "RP_ENDPOINT_1_HOST"
+            valueFrom:
+              fieldRef:
+                fieldPath: "status.podIP"
+          - name: "RP_ENDPOINT_1_PORT"
+            value: "10001"
+          - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_BIND_HOST"
+            valueFrom:
+              fieldRef:
+                fieldPath: "status.podIP"
+          - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_BIND_PORT"
+            value: "10001"
+          - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_HOST"
+            valueFrom:
+              fieldRef:
+                fieldPath: "status.podIP"
+          - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_PORT"
+            value: "10001"
+          - name: "RP_ENDPOINT_AKKA_REMOTE_BIND_HOST"
+            valueFrom:
+              fieldRef:
+                fieldPath: "status.podIP"
+          - name: "RP_ENDPOINT_AKKA_REMOTE_BIND_PORT"
+            value: "10000"
+          - name: "RP_ENDPOINT_AKKA_REMOTE_HOST"
+            valueFrom:
+              fieldRef:
+                fieldPath: "status.podIP"
+          - name: "RP_ENDPOINT_AKKA_REMOTE_PORT"
+            value: "10000"
+          - name: "RP_JAVA_OPTS"
+            value: "-Dconfig.resource=rp-application.conf -Dakka.management.cluster.bootstrap.contact-point-discovery.discovery-method=akka.discovery.akka-dns -Dakka.management.cluster.bootstrap.contact-point-discovery.service-name=bootstrap-demo-kubernetes-dns-internal -Dakka.management.cluster.bootstrap.contact-point-discovery.discovery-method=akka.discovery.akka-dns"
+          - name: "RP_KUBERNETES_POD_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: "status.podIP"
+          - name: "RP_KUBERNETES_POD_NAME"
+            valueFrom:
+              fieldRef:
+                fieldPath: "metadata.name"
+          - name: "RP_MODULES"
+            value: "akka-cluster-bootstrapping,akka-management,common,service-discovery,status"
+          - name: "RP_NAMESPACE"
+            valueFrom:
+              fieldRef:
+                fieldPath: "metadata.namespace"
+          - name: "RP_PLATFORM"
+            value: kubernetes
+
+        ports:
+          - containerPort: 10000
+            name: "akka-remote"
+          - containerPort: 10001
+            name: "akka-mgmt-http"
+        volumeMounts: []
+        command:
+          - "/rp-start"
+        args:
+          - "bin/bootstrap-dns-demo"
+        readinessProbe:
+          httpGet:
+            path: "/platform-tooling/ready"
+            port: "akka-mgmt-http"
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: "/platform-tooling/healthy"
+            port: "akka-mgmt-http"
+          periodSeconds: 10
+          initialDelaySeconds: 60
+---
+#headless
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    appName: bootstrap-dns-demo
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  name: "bootstrap-demo-kubernetes-dns-internal"
+  namespace: reactivelibtest1
+spec:
+  ports:
+  - name: "akka-mgmt-http"
+    port: 10001
+    protocol: TCP
+    targetPort: 10001
+  - name: "akka-remote"
+    port: 10000
+    protocol: TCP
+    targetPort: 10000
+  selector:
+    appName: bootstrap-dns-demo
+  clusterIP: None
+  publishNotReadyAddresses: true
+#headless
+---
+#public
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    appName: bootstrap-dns-demo
+  name: "bootstrap-demo-kubernetes-dns"
+  namespace: reactivelibtest1
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    appName: bootstrap-dns-demo
+  type: LoadBalancer
+#public

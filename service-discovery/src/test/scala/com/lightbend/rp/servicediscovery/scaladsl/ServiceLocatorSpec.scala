@@ -18,9 +18,8 @@ package com.lightbend.rp.servicediscovery.scaladsl
 
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.io.Dns
+import akka.io.dns.{ DnsProtocol, ARecord, SRVRecord }
 import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
-import com.lightbend.rp.asyncdns.AsyncDnsResolver
-import com.lightbend.rp.asyncdns.raw.SRVRecord
 import com.lightbend.rp.common.{ Kubernetes, Mesos, Platform }
 import com.typesafe.config.ConfigFactory
 import java.net.{ InetAddress, URI }
@@ -134,12 +133,13 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
     val serviceLocator = createServiceLocator(Kubernetes, mockDnsResolver = Some(mockDnsResolver.ref))
     val result = serviceLocator.lookup("chirper", "friendservice", "friendlookup")
 
-    mockDnsResolver.expectMsg(Dns.Resolve("_friendlookup._tcp.friendservice.chirper.svc.cluster.local"))
-    mockDnsResolver.reply(AsyncDnsResolver.SrvResolved("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", Seq(
-      SRVRecord("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
+    mockDnsResolver.expectMsg(DnsProtocol.resolve("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", DnsProtocol.Srv))
+    mockDnsResolver.reply(DnsProtocol.Resolved("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", Seq(
+      new SRVRecord("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
 
-    mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
-    mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
+    mockDnsResolver.expectMsg(DnsProtocol.resolve("host1.domain", DnsProtocol.Ip(ipv4 = true, ipv6 = false)))
+    mockDnsResolver.reply(DnsProtocol.Resolved("host1.domain1.", Seq(
+      new ARecord("host1.domain1.", 86400, InetAddress.getByName("10.0.12.5")))))
 
     inside(result.futureValue) {
       case Vector(s: Service) =>
@@ -159,8 +159,9 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
     val serviceLocator = createServiceLocator(Kubernetes, mockDnsResolver = Some(mockDnsResolver.ref))
     val result = serviceLocator.lookup("host1.domain")
 
-    mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
-    mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
+    mockDnsResolver.expectMsg(DnsProtocol.resolve("host1.domain", DnsProtocol.Ip(ipv4 = true, ipv6 = false)))
+    mockDnsResolver.reply(DnsProtocol.Resolved("host1.domain1.", Seq(
+      new ARecord("host1.domain1.", 86400, InetAddress.getByName("10.0.12.5")))))
 
     inside(result.futureValue) {
       case Vector(s: Service) =>
@@ -210,12 +211,12 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
     val serviceLocator = createServiceLocator(Mesos, mockDnsResolver = Some(mockDnsResolver.ref))
     val result = serviceLocator.lookup("chirper", "friendservice", "friendlookup")
 
-    mockDnsResolver.expectMsg(Dns.Resolve("_friendlookup._friendservice-chirper._tcp.marathon.mesos"))
-    mockDnsResolver.reply(AsyncDnsResolver.SrvResolved("_friendlookup._friendlookup-chirper._tcp.marathon.mesos", Seq(
-      SRVRecord("_friendlookup._friendservice-chirper._tcp.marathon.mesos", 100, 1, 1, 4568, "host1.domain"))))
+    mockDnsResolver.expectMsg(DnsProtocol.resolve("_friendlookup._friendservice-chirper._tcp.marathon.mesos", DnsProtocol.Srv))
+    mockDnsResolver.reply(DnsProtocol.Resolved("_friendlookup._friendlookup-chirper._tcp.marathon.mesos", Seq(
+      new SRVRecord("_friendlookup._friendservice-chirper._tcp.marathon.mesos", 100, 1, 1, 4568, "host1.domain"))))
 
-    mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
-    mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
+    mockDnsResolver.expectMsg(DnsProtocol.resolve("host1.domain", DnsProtocol.Ip(ipv4 = true, ipv6 = false)))
+    mockDnsResolver.reply(DnsProtocol.Resolved("host1.domain1.", Seq(new ARecord("host1.domain1.", 86400, InetAddress.getByName("10.0.12.5")))))
 
     inside(result.futureValue) {
       case Vector(s: Service) =>
@@ -259,12 +260,13 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
     val serviceLocator = createServiceLocator(Kubernetes, mockDnsResolver = Some(mockDnsResolver.ref))
     val result = serviceLocator.lookupOne("elastic-search-ext")
 
-    mockDnsResolver.expectMsg(Dns.Resolve("_http._tcp.elasticsearch.test.svc.cluster.local"))
-    mockDnsResolver.reply(AsyncDnsResolver.SrvResolved("_http._tcp.elasticsearch.default.test.cluster.local", Seq(
-      SRVRecord("_http._tcp.elasticsearch.default.test.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
+    mockDnsResolver.expectMsg(DnsProtocol.resolve("_http._tcp.elasticsearch.test.svc.cluster.local", DnsProtocol.Srv))
+    mockDnsResolver.reply(DnsProtocol.Resolved("_http._tcp.elasticsearch.default.test.cluster.local", Seq(
+      new SRVRecord("_http._tcp.elasticsearch.default.test.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
 
-    mockDnsResolver.expectMsg(Dns.Resolve("host1.domain"))
-    mockDnsResolver.reply(Dns.Resolved("host1.domain1.", Seq(InetAddress.getByName("10.0.12.5"))))
+    mockDnsResolver.expectMsg(DnsProtocol.resolve("host1.domain", DnsProtocol.Ip(ipv4 = true, ipv6 = false)))
+    mockDnsResolver.reply(DnsProtocol.Resolved("host1.domain1.", Seq(
+      new ARecord("host1.domain1.", 86400, InetAddress.getByName("10.0.12.5")))))
 
     inside(result.futureValue) {
       case Some(s: Service) =>

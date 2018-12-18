@@ -23,7 +23,7 @@ object DemoApp extends App {
   val cluster = Cluster(system)
 
   log.info(s"Started [$system], cluster.selfAddress = ${cluster.selfAddress}")
-
+  log.info("something2")
   //#start-akka-management
   AkkaManagement(system).start()
   //#start-akka-management

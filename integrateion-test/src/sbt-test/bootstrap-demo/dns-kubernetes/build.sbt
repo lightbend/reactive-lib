@@ -1,15 +1,12 @@
-// https://github.com/akka/akka-management/tree/master/bootstrap-demo/kubernetes-api
+// https://github.com/akka/akka-management/tree/master/bootstrap-demo/kubernetes-dns
 
 import Dependencies._
 import scala.sys.process.Process
 import scala.util.control.NonFatal
 
-ThisBuild / version      := "0.1.0"
+ThisBuild / version      := "0.1.5"
 ThisBuild / organization := "com.example"
 ThisBuild / scalaVersion := "2.12.7"
-
-// This is where we wire the freshly baked reactive-lib
-ThisBuild / reactiveLibVersion := freshReactiveLibVersion
 
 lazy val isOpenShift = {
   sys.props.get("test.openshift").isDefined
@@ -20,7 +17,7 @@ lazy val check = taskKey[Unit]("check")
 lazy val root = (project in file("."))
   .enablePlugins(SbtReactiveAppPlugin)
   .settings(
-    name := "bootstrap-kapi-demo",
+    name := "bootstrap-dns-demo",
     scalacOptions ++= Seq(
       "-encoding",
       "UTF-8",
@@ -30,24 +27,22 @@ lazy val root = (project in file("."))
       "-Xlint",
       "-Yno-adapted-args",
     ),
+    // This is where we wire the freshly baked reactive-lib
+    reactiveLibVersion := freshReactiveLibVersion,
     libraryDependencies ++= Seq(
+      akkaManagement,
+      akkaClusterHttp,
       akkaCluster,
       akkaClusterSharding,
       akkaClusterTools,
-
-      // Theses are currently introduced by reactive-lib
-      // akkaBootstrap,
-      // akkaServiceDiscoveryK8Api,
-
-      // akkaServiceDiscoveryConfig,
-      // akkaClusterHttp,
-
+      akkaDiscoveryDns,
       akkaSlj4j,
       logback,
       scalaTest
     ),
     enableAkkaClusterBootstrap := true,
     akkaClusterBootstrapSystemName := "hoboken1",
+
     // this logic was taken from test.sh
     check := {
       val s = streams.value
@@ -57,15 +52,13 @@ lazy val root = (project in file("."))
       try {
         if (!isOpenShift) {
           Process(s"$kubectl create namespace reactivelibtest1").!(s.log)
-          Process(s"$kubectl apply -f kubernetes/rbac.yml").!(s.log)
-          Process(s"$kubectl apply -f kubernetes/rp.yml").!(s.log)
+          Process(s"$kubectl apply -f kubernetes/akka-cluster.yml").!(s.log)
 
           waitForPods(3, 10, s.log)
           processAndLog(s"$kubectl describe pods --namespace reactivelibtest1", s.log)
           val p = findPodId(nm, s.log)
           checkMemberUp(p, 10, s.log)
         } else {
-          Process(s"$kubectl apply -f kubernetes/rbac.yml").!(s.log)
           // work around: /rp-start: line 60: /opt/docker/bin/bootstrap-kapi-demo: Permission denied
           Process(s"$kubectl adm policy add-scc-to-user anyuid -z default").!(s.log)
           Process(s"$kubectl policy add-role-to-user system:image-builder system:serviceaccount:reactivelibtest1:default").!(s.log)
@@ -82,13 +75,13 @@ lazy val root = (project in file("."))
         }
       } finally {
         Process(s"$kubectl delete services,pods,deployment --all --namespace reactivelibtest1").!(s.log)
+        // Process(s"$kubectl delete namespace reactivelibtest1").!(s.log)
         waitForPods(0, 10, s.log)
       }
-
     }
   )
 
-def kubectl: String = {
+  def kubectl: String = {
   if (isOpenShift) "oc"
   else "kubectl"
 }
@@ -97,7 +90,8 @@ def waitForPods(expected: Int, attempt: Int, log: Logger): Unit = {
   if (attempt == 0) {
     processAndLog(s"$kubectl describe pods --namespace reactivelibtest1", log)
     sys.error("pods did not get ready in time")
-  } else {
+  }
+  else {
     log.info("waiting for pods to get ready...")
     val lines = processAndLog(s"$kubectl get pods --namespace reactivelibtest1", log)
     if ((lines filter { _.contains("Running") }).size == expected) ()
@@ -136,9 +130,20 @@ def checkMemberUp(p: String, attempt: Int, log: Logger): Unit = {
     } catch {
       case NonFatal(_) => Nil
     }
-    lines foreach { log.info(_: String) }
+    lines foreach {
+      log.info(_: String)
+    }
     if (lines.size == 3) ()
     else {
+      if (attempt == 1)
+        (try {
+          Process(s"$kubectl logs $p --namespace reactivelibtest1").!!.lines.toList
+        } catch {
+          case NonFatal(_) => Nil
+        }) foreach {
+          log.info(_: String)
+        }
+      else ()
       Thread.sleep(3000)
       checkMemberUp(p, attempt - 1, log)
     }
