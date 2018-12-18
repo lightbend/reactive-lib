@@ -55,6 +55,7 @@ lazy val root = (project in file("."))
           Process(s"$kubectl apply -f kubernetes/akka-cluster.yml").!(s.log)
 
           waitForPods(3, 10, s.log)
+          processAndLog(s"$kubectl describe pods --namespace reactivelibtest1", s.log)
           val p = findPodId(nm, s.log)
           checkMemberUp(p, 10, s.log)
         } else {
@@ -67,7 +68,8 @@ lazy val root = (project in file("."))
           s.log.info("applying openshift.yml")
           Process(s"$kubectl apply -f kubernetes/openshift.yml").!(s.log)
 
-          waitForPods(3, 10, s.log)
+          waitForPods(3, 20, s.log)
+          processAndLog(s"$kubectl describe pods --namespace reactivelibtest1", s.log)
           val p = findPodId(nm, s.log)
           checkMemberUp(p, 10, s.log)
         }
@@ -86,22 +88,12 @@ lazy val root = (project in file("."))
 
 def waitForPods(expected: Int, attempt: Int, log: Logger): Unit = {
   if (attempt == 0) {
-    val lines = try {
-      Process(s"$kubectl describe pods --namespace reactivelibtest1").!!.lines.toList
-    } catch {
-      case NonFatal(_) => Nil
-    }
-    lines foreach { log.info(_: String) }
+    processAndLog(s"$kubectl describe pods --namespace reactivelibtest1", log)
     sys.error("pods did not get ready in time")
   }
   else {
     log.info("waiting for pods to get ready...")
-    val lines = try {
-      Process(s"$kubectl get pods --namespace reactivelibtest1").!!.lines.toList
-    } catch {
-      case NonFatal(_) => Nil
-    }
-    lines foreach { log.info(_: String) }
+    val lines = processAndLog(s"$kubectl get pods --namespace reactivelibtest1", log)
     if ((lines filter { _.contains("Running") }).size == expected) ()
     else {
       Thread.sleep(4000)
@@ -111,13 +103,22 @@ def waitForPods(expected: Int, attempt: Int, log: Logger): Unit = {
 }
 
 def findPodId(nm: String, log: Logger): String = {
-  val lines = Process(s"$kubectl get pods --namespace reactivelibtest1").!!.lines.toList
-  lines foreach { log.info(_: String) }
+  val lines = processAndLog(s"$kubectl get pods --namespace reactivelibtest1", log)
   val xs = lines filter { s => s.contains("Running") && s.contains(nm) }
   val firstRow = xs.headOption.getOrElse(sys.error("pods not found!"))
   val firstColumn = firstRow.trim.split(" ").toList
     .headOption.getOrElse(sys.error("pods not found!"))
   firstColumn
+}
+
+def processAndLog(cmd: String, log: Logger): List[String] = {
+  val lines = try {
+    Process(cmd).!!.lines.toList
+  } catch {
+    case NonFatal(_) => Nil
+  }
+  lines foreach { log.info(_: String) }
+  lines
 }
 
 def checkMemberUp(p: String, attempt: Int, log: Logger): Unit = {

@@ -25,6 +25,7 @@ object ClusterApp {
 
     val cluster = Cluster(system)
     system.log.info("Starting Akka Management")
+    system.log.info("something2")
     // AkkaManagement(system).start()
     // ClusterBootstrap(system).start()
 
