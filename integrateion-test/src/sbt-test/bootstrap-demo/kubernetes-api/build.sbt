@@ -92,8 +92,15 @@ def kubectl: String = {
 }
 
 def waitForPods(expected: Int, attempt: Int, log: Logger): Unit = {
-  if (attempt == 0) sys.error("pods did not get ready in time")
-  else {
+  if (attempt == 0) {
+    val lines = try {
+      Process(s"$kubectl describe pods --namespace reactivelibtest1").!!.lines.toList
+    } catch {
+      case NonFatal(_) => Nil
+    }
+    lines foreach { log.info(_: String) }
+    sys.error("pods did not get ready in time")
+  } else {
     log.info("waiting for pods to get ready...")
     val lines = try {
       Process(s"$kubectl get pods --namespace reactivelibtest1").!!.lines.toList
