@@ -17,7 +17,7 @@ sbt
 oc new-project reactivelibtest1
 export OC_TOKEN=$(oc serviceaccounts get-token default)
 echo "$OC_TOKEN" | docker login -u unused --password-stdin docker-registry-default.centralpark.lightbend.com
-sbt -Dtest.openshift
+sbt -Ddeckhand.openshift
 
 > integrationTest/scripted bootstrap-demo/dns-kubernetes
 ```

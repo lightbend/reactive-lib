@@ -136,10 +136,10 @@ lazy val integrationTest = (project in file("integration-test"))
   .enablePlugins(SbtPlugin)
   .settings(
     publish / skip := true,
-    // pass in -Dtest.openshift to run scripted test with -Dtest.openshift
+    // pass in -Ddeckhand.openshift to run scripted test with -Ddeckhand.openshift
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value) ++
-      sys.props.get("test.openshift").toList.map(_ => "-Dtest.openshift")
+      sys.props.get("deckhand.openshift").toList.map(_ => "-Ddeckhand.openshift")
     },
     scriptedBufferLog := false
   )

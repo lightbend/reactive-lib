@@ -38,7 +38,7 @@ jobs:
         - export OC_TOKEN=$(oc serviceaccounts get-token default)
         - echo "$OC_TOKEN" | docker login -u unused --password-stdin docker-registry-default.centralpark.lightbend.com
         - oc status
-      script: sbt -Dtest.openshift publishLocal integrationTest/scripted
+      script: sbt -Ddeckhand.openshift publishLocal integrationTest/scripted
       after_script:
         - oc delete project reactivelibtest1
 

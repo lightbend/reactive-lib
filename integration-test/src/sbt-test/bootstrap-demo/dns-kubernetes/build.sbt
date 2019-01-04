@@ -8,10 +8,6 @@ ThisBuild / version      := "0.1.5"
 ThisBuild / organization := "com.example"
 ThisBuild / scalaVersion := "2.12.7"
 
-lazy val isOpenShift = {
-  sys.props.get("test.openshift").isDefined
-}
-
 lazy val check = taskKey[Unit]("check")
 
 lazy val root = (project in file("."))

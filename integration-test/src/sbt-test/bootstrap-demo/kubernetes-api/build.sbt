@@ -11,10 +11,6 @@ ThisBuild / scalaVersion := "2.12.7"
 // This is where we wire the freshly baked reactive-lib
 ThisBuild / reactiveLibVersion := freshReactiveLibVersion
 
-lazy val isOpenShift = {
-  sys.props.get("test.openshift").isDefined
-}
-
 lazy val check = taskKey[Unit]("check")
 
 lazy val root = (project in file("."))
@@ -59,7 +55,7 @@ lazy val root = (project in file("."))
       val yamlDir = baseDirectory.value / "kubernetes"
 
       try {
-        if (!isOpenShift) {
+        if (!Deckhand.isOpenShift) {
           kubectl.tryCreate(s"namespace $namespace")
           kubectl.setCurrentNamespace(namespace)
           kubectl.apply(Deckhand.mustache(yamlDir / "rbac.mustache"),
