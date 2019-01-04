@@ -132,7 +132,7 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
-lazy val integrationTest = (project in file("integrateion-test"))
+lazy val integrationTest = (project in file("integration-test"))
   .enablePlugins(SbtPlugin)
   .settings(
     publish / skip := true,

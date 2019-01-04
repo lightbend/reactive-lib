@@ -4,7 +4,7 @@ on a fresh terminal..
 
 ```
 minikube delete
-minkkube start
+minikube start
 eval $(minikube docker-env)
 kubectl config current-context
 sbt

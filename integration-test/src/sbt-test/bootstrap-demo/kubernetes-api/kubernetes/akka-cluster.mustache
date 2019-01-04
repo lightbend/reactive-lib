@@ -7,7 +7,6 @@ metadata:
     appName: "bootstrap-kapi-demo"
     appNameVersion: "bootstrap-kapi-demo-v0-1-0"
     actorSystemName: hoboken1
-  namespace: reactivelibtest1
 spec:
   replicas: 3
   selector:
@@ -23,8 +22,8 @@ spec:
       restartPolicy: Always
       containers:
         - name: "bootstrap-kapi-demo"
-          image: "bootstrap-kapi-demo:0.1.0"
-          imagePullPolicy: Never
+          image: "{{image}}"
+          imagePullPolicy: "{{imagePullPolicy}}"
           env:
             - name: "RP_APP_NAME"
               value: "bootstrap-kapi-demo"
@@ -133,7 +132,6 @@ metadata:
   labels:
     appName: "bootstrap-kapi-demo"
   name: "bootstrap-kapi-demo"
-  namespace: reactivelibtest1
 spec:
   ports:
     - name: "akka-remote"

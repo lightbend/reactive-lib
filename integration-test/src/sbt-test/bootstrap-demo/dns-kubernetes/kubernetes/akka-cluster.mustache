@@ -7,7 +7,7 @@ metadata:
     appName: "bootstrap-dns-demo"
     appNameVersion: "bootstrap-dns-demo-v0-1-0"
     actorSystemName: hoboken1
-  namespace: reactivelibtest1
+  namespace: {{namespace}}
 spec:
   replicas: 3
   selector:
@@ -30,8 +30,8 @@ spec:
       restartPolicy: Always
       containers:
       - name: "bootstrap-dns-demo"
-        image: "bootstrap-dns-demo:0.1.5"
-        imagePullPolicy: Never
+        image: "{{image}}"
+        imagePullPolicy: "{{imagePullPolicy}}"
 
         env:
           - name: "RP_APP_NAME"
@@ -144,7 +144,7 @@ metadata:
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
   name: "bootstrap-demo-kubernetes-dns-internal"
-  namespace: reactivelibtest1
+  namespace: {{namespace}}
 spec:
   ports:
   - name: "akka-mgmt-http"
@@ -168,7 +168,7 @@ metadata:
   labels:
     appName: bootstrap-dns-demo
   name: "bootstrap-demo-kubernetes-dns"
-  namespace: reactivelibtest1
+  namespace: {{namespace}}
 spec:
   ports:
   - name: http
