@@ -4,7 +4,6 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: pod-reader
-  namespace: reactivelibtest1
 rules:
 - apiGroups: [""] # "" indicates the core API group
   resources: ["pods"]
@@ -15,11 +14,9 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: read-pods
-  namespace: reactivelibtest1
 subjects:
-  # Create the default user for the reactivelibtest1 namespace
 - kind: User
-  name: system:serviceaccount:reactivelibtest1:default
+  name: system:serviceaccount:{{namespace}}:default
 roleRef:
   kind: Role
   name: pod-reader
