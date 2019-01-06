@@ -3,6 +3,7 @@ import ReleaseTransformations._
 
 lazy val Versions = new {
   val akka                      = "2.5.18"
+  val akkaHttp                  = "10.1.5"
   val akkaManagement            = "0.20.0"
   val lagom14                   = "1.4.0"
   val play25                    = "2.5.0"
@@ -149,8 +150,12 @@ lazy val akkaManagement = createProject("reactive-lib-akka-management", "akka-ma
   .settings(
     crossScalaVersions := Vector(Versions.scala211, Versions.scala212),
     libraryDependencies ++= Seq(
-      "com.lightbend.akka.management" %% "akka-management" % Versions.akkaManagement,
-      "com.typesafe.akka"             %% "akka-actor"      % Versions.akka              % "provided"
+      "com.lightbend.akka.management" %% "akka-management"      % Versions.akkaManagement,
+      // Akka HTTP Spray JSON and Akka HTTP are needed here to align with Lagom's usage of Akka HTTP.
+      // Ref https://github.com/lagom/lagom/issues/1652
+      "com.typesafe.akka"             %% "akka-http-spray-json" % Versions.akkaHttp,
+      "com.typesafe.akka"             %% "akka-http"            % Versions.akkaHttp,
+      "com.typesafe.akka"             %% "akka-actor"           % Versions.akka              % "provided"
     )
   )
 
