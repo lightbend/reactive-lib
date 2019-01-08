@@ -86,7 +86,7 @@ spec:
             - name: "RP_ENDPOINT_AKKA_REMOTE_PORT"
               value: "10000"
             - name: "RP_JAVA_OPTS"
-              value: "-Dconfig.resource=rp-application.conf -Dakka.discovery.method=kubernetes-api -Dakka.management.cluster.bootstrap.contact-point-discovery.effective-name=bootstrap-kapi-demo -Dakka.management.cluster.bootstrap.contact-point-discovery.required-contact-point-nr=2 -Dakka.discovery.kubernetes-api.pod-label-selector=actorSystemName=hoboken1"
+              value: "-Dconfig.resource=rp-application.conf -Dakka.management.cluster.bootstrap.contact-point-discovery.discovery-method=kubernetes-api -Dakka.management.cluster.bootstrap.contact-point-discovery.effective-name=bootstrap-kapi-demo -Dakka.management.cluster.bootstrap.contact-point-discovery.required-contact-point-nr=2 -Dakka.discovery.kubernetes-api.pod-label-selector=actorSystemName=hoboken1"
             - name: "RP_KUBERNETES_POD_IP"
               valueFrom:
                 fieldRef:
