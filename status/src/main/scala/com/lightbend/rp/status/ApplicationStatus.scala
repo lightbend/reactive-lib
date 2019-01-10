@@ -19,7 +19,7 @@ package com.lightbend.rp.status
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import akka.management.http.{ ManagementRouteProvider, ManagementRouteProviderSettings }
+import akka.management.scaladsl.{ ManagementRouteProvider, ManagementRouteProviderSettings }
 import scala.collection.immutable.Seq
 import scala.concurrent.{ ExecutionContext, Future }
 

@@ -31,7 +31,7 @@ lazy val root = (project in file("."))
       akkaCluster,
       akkaClusterSharding,
       akkaClusterTools,
-      akkaDiscoveryDns,
+      akkaDiscovery,
       akkaSlj4j,
       logback,
       scalaTest

@@ -1,8 +1,8 @@
 import sbt._
 
 object Dependencies {
-  val akkaVersion = "2.5.18"
-  // val akkaManagementVersion = "0.20.0"
+  val akkaVersion = "2.5.19"
+  // val akkaManagementVersion = "1.0.0-RC1"
   val freshReactiveLibVersion = sys.props.get("plugin.version").getOrElse {
     sys.error("""|The system property 'plugin.version' is not defined.
                  |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)

@@ -17,7 +17,7 @@
 package com.lightbend.rp.akkamanagement
 
 import akka.actor._
-import akka.management.AkkaManagement
+import akka.management.scaladsl.AkkaManagement
 import com.lightbend.rp.common.{ AkkaManagementModule, Module, Platform }
 
 final class AkkaManagementAutostart(system: ExtendedActorSystem) extends Extension {

@@ -2,15 +2,14 @@ import scala.collection.immutable.Seq
 import ReleaseTransformations._
 
 lazy val Versions = new {
-  val akka                      = "2.5.18"
-  val akkaHttp                  = "10.0.15"
-  val akkaManagement            = "0.20.0"
+  val akka                      = "2.5.19"
+  val akkaHttp                  = "10.1.7"
+  val akkaManagement            = "0.20.0+27-a631d10c" // 1.0.0-RC1
   val lagom14                   = "1.4.0"
   val play25                    = "2.5.0"
   val play26                    = "2.6.0"
   val scala211                  = "2.11.12"
   val scala212                  = "2.12.8"
-  val scalaJava8Compat          = "0.8.0"
   val scalaTest                 = "3.0.1"
   val typesafeConfig            = "1.3.1"
 }
@@ -125,8 +124,8 @@ lazy val akkaClusterBootstrap = createProject("reactive-lib-akka-cluster-bootstr
     libraryDependencies ++= Seq(
       "com.lightbend.akka.discovery"  %% "akka-discovery-kubernetes-api"     % Versions.akkaManagement,
       "com.lightbend.akka.discovery"  %% "akka-discovery-marathon-api"       % Versions.akkaManagement,
-      "com.lightbend.akka.discovery"  %% "akka-discovery-dns"                % Versions.akkaManagement,
       "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % Versions.akkaManagement,
+      "com.typesafe.akka"             %% "akka-discovery"                    % Versions.akka,
       "com.typesafe.akka"             %% "akka-testkit"                      % Versions.akka              % "test",
       "com.typesafe.akka"             %% "akka-cluster"                      % Versions.akka              % "provided"
     ),
