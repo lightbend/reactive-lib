@@ -3,6 +3,7 @@
 import Dependencies._
 import scala.sys.process.Process
 import scala.util.control.NonFatal
+import com.typesafe.sbt.packager.docker._
 
 ThisBuild / version      := "0.1.5"
 ThisBuild / organization := "com.example"
@@ -38,6 +39,15 @@ lazy val root = (project in file("."))
     ),
     enableAkkaClusterBootstrap := true,
     akkaClusterBootstrapSystemName := "hoboken1",
+    dockerCommands := {
+      val xs = dockerCommands.value
+      xs flatMap {
+        case x @ Cmd("ADD", _*) =>
+          Vector(x, ExecCmd("RUN", "chmod", "a+x",
+            s"${(Docker / defaultLinuxInstallLocation).value}/bin/${executableScriptName.value}"))
+        case x => Vector(x)
+      }
+    },
 
     // this logic was taken from test.sh
     check := {
@@ -59,8 +69,6 @@ lazy val root = (project in file("."))
               "imagePullPolicy" -> "Never"
             ))
         } else {
-          // work around: /rp-start: line 60: /opt/docker/bin/bootstrap-kapi-demo: Permission denied
-          kubectl.command(s"adm policy add-scc-to-user anyuid system:serviceaccount:$namespace:default")
           kubectl.command(s"policy add-role-to-user system:image-builder system:serviceaccount:$namespace:default")
 
           docker.tag(s"$nm:$v docker-registry-default.centralpark.lightbend.com/$namespace/$nm:$v")
