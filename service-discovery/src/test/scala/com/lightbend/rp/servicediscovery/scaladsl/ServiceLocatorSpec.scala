@@ -16,16 +16,19 @@
 
 package com.lightbend.rp.servicediscovery.scaladsl
 
+import scala.concurrent.duration._
 import akka.actor.{ ActorRef, ActorSystem }
-import akka.io.Dns
-import akka.io.dns.{ DnsProtocol, ARecord, SRVRecord }
+import akka.io.dns.{ ARecord, DnsProtocol, SRVRecord }
 import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
 import com.lightbend.rp.common.{ Kubernetes, Mesos, Platform }
 import com.typesafe.config.ConfigFactory
 import java.net.{ InetAddress, URI }
+
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ AsyncFunSuiteLike, BeforeAndAfterAll, Inside, DiagrammedAssertions }
+import org.scalatest.{ AsyncFunSuiteLike, BeforeAndAfterAll, DiagrammedAssertions, Inside }
 import scala.collection.immutable.Seq
+
+import akka.io.dns.CachePolicy.Ttl
 
 object ServiceLocatorSpec {
   def config = ConfigFactory
@@ -135,11 +138,11 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
     mockDnsResolver.expectMsg(DnsProtocol.resolve("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", DnsProtocol.Srv))
     mockDnsResolver.reply(DnsProtocol.Resolved("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", Seq(
-      new SRVRecord("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
+      new SRVRecord("_friendlookup._tcp.friendservice.chirper.svc.cluster.local", Ttl.fromPositive(100.seconds), 1, 1, 4568, "host1.domain"))))
 
     mockDnsResolver.expectMsg(DnsProtocol.resolve("host1.domain", DnsProtocol.Ip(ipv4 = true, ipv6 = false)))
     mockDnsResolver.reply(DnsProtocol.Resolved("host1.domain1.", Seq(
-      new ARecord("host1.domain1.", 86400, InetAddress.getByName("10.0.12.5")))))
+      new ARecord("host1.domain1.", Ttl.fromPositive(86400.seconds), InetAddress.getByName("10.0.12.5")))))
 
     inside(result.futureValue) {
       case Vector(s: Service) =>
@@ -161,7 +164,7 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
     mockDnsResolver.expectMsg(DnsProtocol.resolve("host1.domain", DnsProtocol.Ip(ipv4 = true, ipv6 = false)))
     mockDnsResolver.reply(DnsProtocol.Resolved("host1.domain1.", Seq(
-      new ARecord("host1.domain1.", 86400, InetAddress.getByName("10.0.12.5")))))
+      new ARecord("host1.domain1.", Ttl.fromPositive(86400.seconds), InetAddress.getByName("10.0.12.5")))))
 
     inside(result.futureValue) {
       case Vector(s: Service) =>
@@ -213,10 +216,10 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
     mockDnsResolver.expectMsg(DnsProtocol.resolve("_friendlookup._friendservice-chirper._tcp.marathon.mesos", DnsProtocol.Srv))
     mockDnsResolver.reply(DnsProtocol.Resolved("_friendlookup._friendlookup-chirper._tcp.marathon.mesos", Seq(
-      new SRVRecord("_friendlookup._friendservice-chirper._tcp.marathon.mesos", 100, 1, 1, 4568, "host1.domain"))))
+      new SRVRecord("_friendlookup._friendservice-chirper._tcp.marathon.mesos", Ttl.fromPositive(100.seconds), 1, 1, 4568, "host1.domain"))))
 
     mockDnsResolver.expectMsg(DnsProtocol.resolve("host1.domain", DnsProtocol.Ip(ipv4 = true, ipv6 = false)))
-    mockDnsResolver.reply(DnsProtocol.Resolved("host1.domain1.", Seq(new ARecord("host1.domain1.", 86400, InetAddress.getByName("10.0.12.5")))))
+    mockDnsResolver.reply(DnsProtocol.Resolved("host1.domain1.", Seq(new ARecord("host1.domain1.", Ttl.fromPositive(86400.seconds), InetAddress.getByName("10.0.12.5")))))
 
     inside(result.futureValue) {
       case Vector(s: Service) =>
@@ -262,11 +265,11 @@ class ServiceLocatorSpec extends TestKit(ActorSystem("service-locator", ServiceL
 
     mockDnsResolver.expectMsg(DnsProtocol.resolve("_http._tcp.elasticsearch.test.svc.cluster.local", DnsProtocol.Srv))
     mockDnsResolver.reply(DnsProtocol.Resolved("_http._tcp.elasticsearch.default.test.cluster.local", Seq(
-      new SRVRecord("_http._tcp.elasticsearch.default.test.cluster.local", 100, 1, 1, 4568, "host1.domain"))))
+      new SRVRecord("_http._tcp.elasticsearch.default.test.cluster.local", Ttl.fromPositive(100.seconds), 1, 1, 4568, "host1.domain"))))
 
     mockDnsResolver.expectMsg(DnsProtocol.resolve("host1.domain", DnsProtocol.Ip(ipv4 = true, ipv6 = false)))
     mockDnsResolver.reply(DnsProtocol.Resolved("host1.domain1.", Seq(
-      new ARecord("host1.domain1.", 86400, InetAddress.getByName("10.0.12.5")))))
+      new ARecord("host1.domain1.", Ttl.fromPositive(86400.seconds), InetAddress.getByName("10.0.12.5")))))
 
     inside(result.futureValue) {
       case Some(s: Service) =>
