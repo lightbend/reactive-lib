@@ -42,49 +42,49 @@ spec:
                 fieldRef:
                   fieldPath: "status.podIP"
             - name: "RP_ENDPOINT_0_BIND_PORT"
-              value: "10000"
+              value: "2552"
             - name: "RP_ENDPOINT_0_HOST"
               valueFrom:
                 fieldRef:
                   fieldPath: "status.podIP"
             - name: "RP_ENDPOINT_0_PORT"
-              value: "10000"
+              value: "2552"
             - name: "RP_ENDPOINT_1_BIND_HOST"
               valueFrom:
                 fieldRef:
                   fieldPath: "status.podIP"
             - name: "RP_ENDPOINT_1_BIND_PORT"
-              value: "10001"
+              value: "8558"
             - name: "RP_ENDPOINT_1_HOST"
               valueFrom:
                 fieldRef:
                   fieldPath: "status.podIP"
             - name: "RP_ENDPOINT_1_PORT"
-              value: "10001"
+              value: "8558"
             - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_BIND_HOST"
               valueFrom:
                 fieldRef:
                   fieldPath: "status.podIP"
             - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_BIND_PORT"
-              value: "10001"
+              value: "8558"
             - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_HOST"
               valueFrom:
                 fieldRef:
                   fieldPath: "status.podIP"
             - name: "RP_ENDPOINT_AKKA_MGMT_HTTP_PORT"
-              value: "10001"
+              value: "8558"
             - name: "RP_ENDPOINT_AKKA_REMOTE_BIND_HOST"
               valueFrom:
                 fieldRef:
                   fieldPath: "status.podIP"
             - name: "RP_ENDPOINT_AKKA_REMOTE_BIND_PORT"
-              value: "10000"
+              value: "2552"
             - name: "RP_ENDPOINT_AKKA_REMOTE_HOST"
               valueFrom:
                 fieldRef:
                   fieldPath: "status.podIP"
             - name: "RP_ENDPOINT_AKKA_REMOTE_PORT"
-              value: "10000"
+              value: "2552"
             - name: "RP_JAVA_OPTS"
               value: "-Dconfig.resource=rp-application.conf -Dakka.management.cluster.bootstrap.contact-point-discovery.discovery-method=kubernetes-api -Dakka.management.cluster.bootstrap.contact-point-discovery.effective-name=bootstrap-kapi-demo -Dakka.management.cluster.bootstrap.contact-point-discovery.required-contact-point-nr=2 -Dakka.discovery.kubernetes-api.pod-label-selector=actorSystemName=hoboken1"
             - name: "RP_KUBERNETES_POD_IP"
@@ -104,9 +104,9 @@ spec:
             - name: "RP_PLATFORM"
               value: kubernetes
           ports:
-            - containerPort: 10000
+            - containerPort: 2552
               name: "akka-remote"
-            - containerPort: 10001
+            - containerPort: 8558
               name: "akka-mgmt-http"
           volumeMounts: []
           command:
@@ -135,12 +135,12 @@ metadata:
 spec:
   ports:
     - name: "akka-remote"
-      port: 10000
+      port: 2552
       protocol: TCP
-      targetPort: 10000
+      targetPort: 2552
     - name: "akka-mgmt-http"
-      port: 10001
+      port: 8558
       protocol: TCP
-      targetPort: 10001
+      targetPort: 8558
   selector:
     appName: "bootstrap-kapi-demo"
