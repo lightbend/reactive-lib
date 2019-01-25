@@ -27,11 +27,10 @@ class ModuleSpec extends WordSpec with Matchers {
 
       Module.parse("akka-cluster-bootstrapping") shouldBe Set(AkkaClusterBootstrapModule)
 
-      Module.parse("akka-cluster-bootstrapping,akka-management,common,play-http-binding,secrets,service-discovery,status") shouldBe Set(
+      Module.parse("akka-cluster-bootstrapping,akka-management,common,secrets,service-discovery,status") shouldBe Set(
         AkkaClusterBootstrapModule,
         AkkaManagementModule,
         CommonModule,
-        PlayHttpBindingModule,
         SecretsModule,
         ServiceDiscoveryModule,
         StatusModule)
