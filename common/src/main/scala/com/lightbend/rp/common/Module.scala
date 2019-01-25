@@ -21,7 +21,6 @@ sealed trait Module
 case object AkkaClusterBootstrapModule extends Module
 case object AkkaManagementModule extends Module
 case object CommonModule extends Module
-case object PlayHttpBindingModule extends Module
 case object SecretsModule extends Module
 case object ServiceDiscoveryModule extends Module
 case object StatusModule extends Module
@@ -42,7 +41,6 @@ object Module {
     ifActive("akka-cluster-bootstrapping", AkkaClusterBootstrapModule) ++
       ifActive("akka-management", AkkaManagementModule) ++
       ifActive("common", CommonModule) ++
-      ifActive("play-http-binding", PlayHttpBindingModule) ++
       ifActive("secrets", SecretsModule) ++
       ifActive("service-discovery", ServiceDiscoveryModule) ++
       ifActive("status", StatusModule)

@@ -74,7 +74,6 @@ lazy val root = createProject("reactive-lib", ".")
     akkaClusterBootstrap,
     akkaManagement,
     common,
-    playHttpBinding,
     secrets,
     serviceDiscovery,
     serviceDiscoveryLagom14Java,
@@ -156,12 +155,6 @@ lazy val akkaManagement = createProject("reactive-lib-akka-management", "akka-ma
       "com.typesafe.akka"             %% "akka-http"            % Versions.akkaHttp,
       "com.typesafe.akka"             %% "akka-actor"           % Versions.akka              % "provided"
     )
-  )
-
-lazy val playHttpBinding = createProject("reactive-lib-play-http-binding", "play-http-binding")
-  .dependsOn(common, status)
-  .settings(
-    crossScalaVersions := Vector(Versions.scala211, Versions.scala212)
   )
 
 lazy val secrets = createProject("reactive-lib-secrets", "secrets")
