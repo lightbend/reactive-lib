@@ -26,6 +26,10 @@ import scala.compat.java8.FutureConverters;
 import scala.compat.java8.OptionConverters;
 
 public class SecretReader {
+    /**
+     * @deprecated  As of 1.7.0. Read from file /rp/secrets/%name%/%key% where %name% is transformed to lowercase, and '-' for non-alphanum.
+     */
+    @Deprecated
     public static CompletionStage<Optional<ByteString>> get(String name, String key, ActorSystem actorSystem, ActorMaterializer mat) {
         return FutureConverters.toJava(
                 SecretReader$
