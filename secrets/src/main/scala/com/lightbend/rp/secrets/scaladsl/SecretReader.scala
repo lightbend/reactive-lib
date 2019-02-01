@@ -27,6 +27,7 @@ import java.nio.file.{ Path, Paths }
 import scala.concurrent._
 
 object SecretReader {
+  @deprecated("Read from file /rp/secrets/%name%/%key% where %name% is transformed to lowercase, and '-' for non-alphanum", "1.7.0")
   def get(name: String, key: String)(implicit as: ActorSystem, mat: ActorMaterializer): Future[Option[ByteString]] = {
     import as.dispatcher
 
