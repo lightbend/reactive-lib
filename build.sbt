@@ -2,7 +2,7 @@ import scala.collection.immutable.Seq
 import ReleaseTransformations._
 
 lazy val Versions = new {
-  val akka                      = "2.5.19"
+  val akka                      = "2.5.20"
   val akkaHttp                  = "10.0.15"
   val akkaManagement            = "0.20.0"
   val lagom14                   = "1.4.0"

@@ -30,14 +30,6 @@ lazy val root = (project in file("."))
       akkaCluster,
       akkaClusterSharding,
       akkaClusterTools,
-
-      // Theses are currently introduced by reactive-lib
-      // akkaBootstrap,
-      // akkaServiceDiscoveryK8Api,
-
-      // akkaServiceDiscoveryConfig,
-      // akkaClusterHttp,
-
       akkaSlj4j,
       logback,
       scalaTest
