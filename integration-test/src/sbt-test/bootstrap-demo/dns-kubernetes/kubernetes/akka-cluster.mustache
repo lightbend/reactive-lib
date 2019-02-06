@@ -2,125 +2,112 @@
 apiVersion: "apps/v1beta2"
 kind: Deployment
 metadata:
-  name: "bootstrap-dns-demo-v0-1-0"
+  name: "bootstrap-dns-demo-v0-1-5"
   labels:
-    appName: "bootstrap-dns-demo"
-    appNameVersion: "bootstrap-dns-demo-v0-1-0"
-    actorSystemName: hoboken1
+    app: "bootstrap-dns-demo"
+    appNameVersion: "bootstrap-dns-demo-v0-1-5"
+    "akka.lightbend.com/service-name": hoboken1
 spec:
   replicas: 3
   selector:
     matchLabels:
-      appNameVersion: "bootstrap-dns-demo-v0-1-0"
-
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-    type: RollingUpdate
-
+      appNameVersion: "bootstrap-dns-demo-v0-1-5"
   template:
     metadata:
       labels:
-        appName: "bootstrap-dns-demo"
-        appNameVersion: "bootstrap-dns-demo-v0-1-0"
-        actorSystemName: hoboken1
+        app: "bootstrap-dns-demo"
+        appNameVersion: "bootstrap-dns-demo-v0-1-5"
+        "akka.lightbend.com/service-name": hoboken1
     spec:
       restartPolicy: Always
       containers:
-      - name: "bootstrap-dns-demo"
-        image: "{{image}}"
-        imagePullPolicy: "{{imagePullPolicy}}"
-
-        env:
-          - name: "RP_APP_NAME"
-            value: "bootstrap-dns-demo"
-          - name: "RP_APP_TYPE"
-            value: basic
-          - name: "RP_APP_VERSION"
-            value: "0.1.0"
-          - name: "RP_DYN_JAVA_OPTS"
-            value: ""
-          - name: "RP_JAVA_OPTS"
-            value: "-Dconfig.resource=rp-application.conf -Dakka.management.cluster.bootstrap.contact-point-discovery.discovery-method=akka.discovery.akka-dns -Dakka.management.cluster.bootstrap.contact-point-discovery.service-name=bootstrap-demo-kubernetes-dns-internal -Dakka.management.cluster.bootstrap.contact-point-discovery.required-contact-point-nr=2"
-          - name: "RP_KUBERNETES_POD_IP"
-            valueFrom:
-              fieldRef:
-                fieldPath: "status.podIP"
-          - name: "RP_KUBERNETES_POD_NAME"
-            valueFrom:
-              fieldRef:
-                fieldPath: "metadata.name"
-          - name: "RP_MODULES"
-            value: "akka-cluster-bootstrapping,akka-management,common,service-discovery,status"
-          - name: "RP_NAMESPACE"
-            valueFrom:
-              fieldRef:
-                fieldPath: "metadata.namespace"
-          - name: "RP_PLATFORM"
-            value: kubernetes
-
-        ports:
-          - containerPort: 2552
-            name: "akka-remote"
-          - containerPort: 8558
-            name: "akka-mgmt-http"
-        volumeMounts: []
-        command:
-          - "/rp-start"
-        args:
-          - "bin/bootstrap-dns-demo"
-        readinessProbe:
-          httpGet:
-            path: "/platform-tooling/ready"
-            port: "akka-mgmt-http"
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: "/platform-tooling/healthy"
-            port: "akka-mgmt-http"
-          periodSeconds: 10
-          initialDelaySeconds: 60
+        - name: "bootstrap-dns-demo"
+          image: "{{image}}"
+          imagePullPolicy: "{{imagePullPolicy}}"
+          env:
+            - name: "RP_APP_NAME"
+              value: "bootstrap-dns-demo"
+            - name: "RP_APP_TYPE"
+              value: basic
+            - name: "RP_APP_VERSION"
+              value: "0.1.5"
+            - name: "RP_DYN_JAVA_OPTS"
+              value: "-Dakka.discovery.kubernetes-api.pod-namespace=$RP_NAMESPACE"
+            - name: "RP_JAVA_OPTS"
+              value: "-Dconfig.resource=rp-application.conf -Dakka.management.cluster.bootstrap.contact-point-discovery.discovery-method=akka-dns -Dakka.management.cluster.bootstrap.contact-point-discovery.port-name=management -Dakka.management.cluster.bootstrap.contact-point-discovery.service-name=bootstrap-dns-demo-internal -Dakka.management.cluster.bootstrap.contact-point-discovery.required-contact-point-nr=3 -Dplay.server.pidfile.path=/dev/null"
+            - name: "RP_KUBERNETES_POD_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "status.podIP"
+            - name: "RP_KUBERNETES_POD_NAME"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "metadata.name"
+            - name: "RP_MODULES"
+              value: "akka-cluster-bootstrapping,akka-management,common,service-discovery,status"
+            - name: "RP_NAMESPACE"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "metadata.namespace"
+            - name: "RP_PLATFORM"
+              value: kubernetes
+          ports:
+            - containerPort: 2552
+              name: remoting
+            - containerPort: 8558
+              name: management
+          volumeMounts: []
+          command:
+            - "/opt/docker/bin/rp-start"
+          args:
+            - "bin/bootstrap-dns-demo"
+          readinessProbe:
+            httpGet:
+              path: "/platform-tooling/ready"
+              port: management
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/platform-tooling/healthy"
+              port: management
+            periodSeconds: 10
+            initialDelaySeconds: 60
+      volumes: []
 ---
-#headless
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    appName: bootstrap-dns-demo
+    app: "bootstrap-dns-demo"
   annotations:
-    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
-  name: "bootstrap-demo-kubernetes-dns-internal"
+    "service.alpha.kubernetes.io/tolerate-unready-endpoints": "true"
+  name: "bootstrap-dns-demo-internal"
 spec:
   ports:
-  - name: "akka-mgmt-http"
-    port: 8558
-    protocol: TCP
-    targetPort: 8558
-  - name: "akka-remote"
-    port: 2552
-    protocol: TCP
-    targetPort: 2552
+    - name: remoting
+      port: 2552
+      protocol: TCP
+      targetPort: 2552
+    - name: management
+      port: 8558
+      protocol: TCP
+      targetPort: 8558
   selector:
-    appName: bootstrap-dns-demo
+    app: "bootstrap-dns-demo"
   clusterIP: None
   publishNotReadyAddresses: true
-#headless
 ---
-#public
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    appName: bootstrap-dns-demo
-  name: "bootstrap-demo-kubernetes-dns"
+    app: "bootstrap-dns-demo"
+  name: "bootstrap-dns-demo"
 spec:
   ports:
-  - name: http
-    port: 8080
-    protocol: TCP
-    targetPort: 8080
+    - name: dummy
+      port: 70
+      protocol: TCP
+      targetPort: 70
   selector:
-    appName: bootstrap-dns-demo
-  type: LoadBalancer
-#public
+    app: "bootstrap-dns-demo"
