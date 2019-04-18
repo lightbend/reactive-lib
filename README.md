@@ -4,6 +4,12 @@
 
 This project is a component of [Lightbend Orchestration for Kubernetes](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/). Refer to its documentation for usage, examples, and reference information.
 
+## Project Status
+
+Lightbend Orchestration is no longer actively developed and will reach its [End of Life](https://developer.lightbend.com/docs/lightbend-platform/2.0/support-terminology/index.html#end-of-life-eol-) on April 15, 2020.
+
+We recommend [Migrating to the Improved Kubernetes Deployment Experience](https://developer.lightbend.com/docs/lightbend-orchestration/current/migration.html).
+
 ## Usage
 
 ### Kubernetes
@@ -54,10 +60,6 @@ class LagomLoader extends LagomApplicationLoader {
 
 ...
 ```
-
-## Maintenance
-
-Enterprise Suite Platform Team <es-platform@lightbend.com>
 
 ## License
 
